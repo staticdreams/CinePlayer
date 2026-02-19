@@ -136,7 +136,7 @@ public final class PlayerEngine {
     /// Audio track metadata for HLS manifest rewriting (set before activate).
     public var pendingHLSAudioTracks: [HLSAudioTrackInfo]?
 
-    /// Tears down observers and pauses playback.
+    /// Tears down observers, stops playback, and fully unloads media.
     /// Call from `.onDisappear`.
     public func deactivate() {
         guard isActivated else { return }
@@ -153,6 +153,18 @@ public final class PlayerEngine {
         rateObservation = nil
         currentItemObservation?.invalidate()
         currentItemObservation = nil
+
+        // Fully unload media so AVPlayer releases its audio pipeline.
+        player.replaceCurrentItem(with: nil)
+
+        // Break retain cycles through callback closures.
+        onProgressUpdate = nil
+        onPlaybackEnd = nil
+        onPlayNext = nil
+        onDismissNext = nil
+
+        // Release HLS manifest interceptor.
+        hlsInterceptor = nil
     }
 
     /// Replaces the current URL and resets state. Call `activate()` again if needed,

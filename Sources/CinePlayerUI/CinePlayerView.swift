@@ -221,6 +221,7 @@ public struct CinePlayerView: View {
     private func restoreAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setCategory(.ambient)
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
             #if DEBUG
             print("[CinePlayer] Audio session restore failed: \(error)")
