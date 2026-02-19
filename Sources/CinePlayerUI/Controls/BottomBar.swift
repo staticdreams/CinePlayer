@@ -5,7 +5,7 @@ import SwiftUI
 /// landscape shows inline audio/speed/subtitles pill + progress pill.
 struct BottomBar: View {
     let engine: PlayerEngine
-    let title: String
+    let titleInfo: PlayerTitleInfo
     let showingStats: Bool
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
@@ -33,11 +33,7 @@ struct BottomBar: View {
         VStack(spacing: 8) {
             // Title row + "..." glass circle menu
             HStack(alignment: .bottom) {
-                Text(title)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                titleView(fontSize: 18)
 
                 Spacer(minLength: 12)
 
@@ -63,11 +59,7 @@ struct BottomBar: View {
         VStack(spacing: 8) {
             // Title row + options pill
             HStack(alignment: .bottom) {
-                Text(title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                titleView(fontSize: 16)
 
                 Spacer(minLength: 12)
 
@@ -115,6 +107,35 @@ struct BottomBar: View {
             .padding(.horizontal, 12)
         }
         .padding(.bottom, 12)
+    }
+
+    // MARK: - Title
+
+    @ViewBuilder
+    private func titleView(fontSize: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(titleInfo.title)
+                .font(.system(size: fontSize, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            if let original = titleInfo.subtitle, !original.isEmpty {
+                Text(original)
+                    .font(.system(size: fontSize - 4, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            if !titleInfo.metadata.isEmpty {
+                Text(titleInfo.metadata.joined(separator: " · "))
+                    .font(.system(size: fontSize - 6, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
     }
 
     // MARK: - Menus

@@ -14,7 +14,7 @@ public struct CinePlayerView: View {
     @Environment(\.dismiss) private var dismiss
 
     // Configurable via modifiers
-    private var title: String = ""
+    private var titleInfo = PlayerTitleInfo("")
     private var onProgressUpdateCallback: ((TimeInterval, TimeInterval) -> Void)?
     private var onPlaybackEndCallback: (() -> Void)?
 
@@ -40,7 +40,7 @@ public struct CinePlayerView: View {
             ControlsOverlay(
                 engine: engine,
                 controlsVisibility: controlsVisibility,
-                title: title,
+                titleInfo: titleInfo,
                 showingStats: showStats,
                 onClose: {
                     engine.deactivate()
@@ -207,10 +207,17 @@ extension CinePlayerView {
         return view
     }
 
-    /// Sets the title displayed above the progress bar.
+    /// Sets a simple title displayed above the progress bar.
     public func title(_ title: String) -> CinePlayerView {
         var view = self
-        view.title = title
+        view.titleInfo = PlayerTitleInfo(title)
+        return view
+    }
+
+    /// Sets rich title info with optional original title and metadata.
+    public func titleInfo(_ info: PlayerTitleInfo) -> CinePlayerView {
+        var view = self
+        view.titleInfo = info
         return view
     }
 

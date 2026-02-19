@@ -6,7 +6,7 @@ import SwiftUI
 struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
-    let title: String
+    let titleInfo: PlayerTitleInfo
     let showingStats: Bool
     let onClose: () -> Void
     let onPiPTap: () -> Void
@@ -69,7 +69,7 @@ struct ControlsOverlay: View {
 
                     BottomBar(
                         engine: engine,
-                        title: title,
+                        titleInfo: titleInfo,
                         showingStats: showingStats,
                         onAudioTrackTap: {
                             onAudioTrackTap()
