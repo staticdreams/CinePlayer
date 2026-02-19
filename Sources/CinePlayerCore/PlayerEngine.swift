@@ -235,12 +235,14 @@ public final class PlayerEngine {
             self.state.currentTime = seconds
 
             // Update duration and live detection from current item.
+            // Only check for live AFTER readyToPlay — HLS streams start with
+            // .indefinite duration before the manifest loads.
             if let item = self.player.currentItem {
                 let dur = CMTimeGetSeconds(item.duration)
                 if dur.isFinite && dur > 0 {
                     self.state.duration = dur
                     self.state.isLive = false
-                } else if item.duration == .indefinite {
+                } else if item.duration == .indefinite, self.state.status == .readyToPlay {
                     self.state.isLive = true
                 }
             }

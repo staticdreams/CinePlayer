@@ -10,6 +10,7 @@ private struct NowPlayingMetadata {
     let title: String
     let artist: String?
     let artwork: UIImage?
+    let artworkURL: URL?
 }
 
 /// The main public view for CinePlayer. Hosts the video surface and controls overlay.
@@ -108,11 +109,18 @@ public struct CinePlayerView: View {
             controlsVisibility.show()
 
             if let nowPlayingMetadata {
+                var artwork = nowPlayingMetadata.artwork
+                if artwork == nil, let artworkURL = nowPlayingMetadata.artworkURL {
+                    if let (data, _) = try? await URLSession.shared.data(from: artworkURL),
+                       let image = UIImage(data: data) {
+                        artwork = image
+                    }
+                }
                 nowPlayingManager.configure(
                     engine: engine,
                     title: nowPlayingMetadata.title,
                     artist: nowPlayingMetadata.artist,
-                    artwork: nowPlayingMetadata.artwork
+                    artwork: artwork
                 )
             }
         }
@@ -283,9 +291,10 @@ extension CinePlayerView {
     }
 
     /// Enables Now Playing integration for lock screen and control center.
-    public func nowPlaying(title: String, artist: String? = nil, artwork: UIImage? = nil) -> CinePlayerView {
+    /// Pass `artwork` for a pre-loaded image or `artworkURL` for async download.
+    public func nowPlaying(title: String, artist: String? = nil, artwork: UIImage? = nil, artworkURL: URL? = nil) -> CinePlayerView {
         var view = self
-        view.nowPlayingMetadata = NowPlayingMetadata(title: title, artist: artist, artwork: artwork)
+        view.nowPlayingMetadata = NowPlayingMetadata(title: title, artist: artist, artwork: artwork, artworkURL: artworkURL)
         return view
     }
 
