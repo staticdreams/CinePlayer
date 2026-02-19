@@ -19,6 +19,10 @@ struct ControlsOverlay: View {
                 // Buttons in the VStack above take tap priority.
                 Color.black.opacity(0.25)
                     .ignoresSafeArea()
+                    .onTapGesture(count: 2) {
+                        engine.toggleZoom()
+                        controlsVisibility.resetTimer()
+                    }
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             controlsVisibility.hide()
@@ -86,6 +90,9 @@ struct ControlsOverlay: View {
                 Color.clear
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
+                    .onTapGesture(count: 2) {
+                        engine.toggleZoom()
+                    }
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             controlsVisibility.show()

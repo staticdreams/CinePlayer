@@ -35,9 +35,6 @@ public struct CinePlayerView: View {
                 }
             )
             .ignoresSafeArea()
-            .onTapGesture(count: 2) {
-                engine.toggleZoom()
-            }
 
             // Controls overlay (respects safe area — stays below Dynamic Island, above home indicator)
             ControlsOverlay(
