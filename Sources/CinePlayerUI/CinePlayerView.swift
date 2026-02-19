@@ -52,6 +52,7 @@ public struct CinePlayerView: View {
                 engine: engine,
                 controlsVisibility: controlsVisibility,
                 titleInfo: titleInfo,
+                localization: engine.configuration.localization,
                 showingStats: showStats,
                 onClose: {
                     engine.deactivate()
@@ -76,7 +77,7 @@ public struct CinePlayerView: View {
             if showStats {
                 VStack {
                     HStack {
-                        StatsOverlayView(stats: engine.stats)
+                        StatsOverlayView(stats: engine.stats, localization: engine.configuration.localization)
                             .padding(15)
                         Spacer()
                     }
@@ -138,6 +139,7 @@ public struct CinePlayerView: View {
         AudioTrackPicker(
             tracks: engine.trackState.audioTracks,
             selectedIndex: engine.trackState.selectedAudioIndex,
+            localization: engine.configuration.localization,
             onSelect: { index in
                 engine.trackState.selectedAudioIndex = index
                 showAudioPicker = false
@@ -156,6 +158,7 @@ public struct CinePlayerView: View {
             tracks: engine.trackState.subtitleTracks,
             selectedIndex: engine.trackState.selectedSubtitleIndex,
             subtitlesOff: engine.trackState.subtitlesOff,
+            localization: engine.configuration.localization,
             onSelect: { index in
                 engine.trackState.selectedSubtitleIndex = index
                 engine.trackState.subtitlesOff = false
@@ -275,6 +278,20 @@ extension CinePlayerView {
     public func nowPlaying(title: String, artist: String? = nil, artwork: UIImage? = nil) -> CinePlayerView {
         var view = self
         view.nowPlayingMetadata = NowPlayingMetadata(title: title, artist: artist, artwork: artwork)
+        return view
+    }
+
+    /// Sets the player UI language by code (e.g. `"en"`, `"ru"`).
+    public func language(_ code: String) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.localization = PlayerLocalization(languageCode: code)
+        return view
+    }
+
+    /// Sets a custom localization for full control over all player strings.
+    public func localization(_ localization: PlayerLocalization) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.localization = localization
         return view
     }
 }

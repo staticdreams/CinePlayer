@@ -7,6 +7,7 @@ struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
     let titleInfo: PlayerTitleInfo
+    let localization: PlayerLocalization
     let showingStats: Bool
     let onClose: () -> Void
     let onPiPTap: () -> Void
@@ -70,6 +71,7 @@ struct ControlsOverlay: View {
                     BottomBar(
                         engine: engine,
                         titleInfo: titleInfo,
+                        localization: localization,
                         showingStats: showingStats,
                         onAudioTrackTap: {
                             onAudioTrackTap()

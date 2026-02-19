@@ -17,17 +17,22 @@ public struct PlayerConfiguration: Sendable {
     /// Video display gravity.
     public var gravity: VideoGravity = .resizeAspect
 
+    /// Localized strings for the player UI.
+    public var localization: PlayerLocalization = .english
+
     public init(
         startTime: TimeInterval = 0,
         autoPlay: Bool = true,
         loop: Bool = false,
         speeds: [PlaybackSpeed] = PlaybackSpeed.standard,
-        gravity: VideoGravity = .resizeAspect
+        gravity: VideoGravity = .resizeAspect,
+        localization: PlayerLocalization = .english
     ) {
         self.startTime = startTime
         self.autoPlay = autoPlay
         self.loop = loop
         self.speeds = speeds
         self.gravity = gravity
+        self.localization = localization
     }
 }

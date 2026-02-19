@@ -6,17 +6,20 @@ import SwiftUI
 public struct AudioTrackPicker: View {
     let tracks: [any PlayerAudioTrack]
     let selectedIndex: Int?
+    let localization: PlayerLocalization
     let onSelect: (Int) -> Void
     let onDismiss: () -> Void
 
     public init(
         tracks: [any PlayerAudioTrack],
         selectedIndex: Int?,
+        localization: PlayerLocalization = .english,
         onSelect: @escaping (Int) -> Void,
         onDismiss: @escaping () -> Void
     ) {
         self.tracks = tracks
         self.selectedIndex = selectedIndex
+        self.localization = localization
         self.onSelect = onSelect
         self.onDismiss = onDismiss
     }
@@ -51,11 +54,11 @@ public struct AudioTrackPicker: View {
                     }
                 }
             }
-            .navigationTitle("Audio")
+            .navigationTitle(localization.audio)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onDismiss)
+                    Button(localization.done, action: onDismiss)
                 }
             }
         }

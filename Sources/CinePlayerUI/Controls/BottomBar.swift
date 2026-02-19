@@ -6,6 +6,7 @@ import SwiftUI
 struct BottomBar: View {
     let engine: PlayerEngine
     let titleInfo: PlayerTitleInfo
+    let localization: PlayerLocalization
     let showingStats: Bool
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
@@ -200,7 +201,7 @@ struct BottomBar: View {
                 }
             }
         } label: {
-            Label("Playback Speed", systemImage: "gauge.with.dots.needle.33percent")
+            Label(localization.playbackSpeed, systemImage: "gauge.with.dots.needle.33percent")
         }
         // Cancel auto-hide when menu content appears (i.e. menu opened).
         .onAppear { onMenuOpen() }
@@ -208,14 +209,14 @@ struct BottomBar: View {
         // Audio track
         if !engine.trackState.audioTracks.isEmpty {
             Button(action: onAudioTrackTap) {
-                Label("Audio", systemImage: "waveform")
+                Label(localization.audio, systemImage: "waveform")
             }
         }
 
         // Subtitles
         if !engine.trackState.subtitleTracks.isEmpty {
             Button(action: onSubtitleTrackTap) {
-                Label("Subtitles", systemImage: "captions.bubble")
+                Label(localization.subtitles, systemImage: "captions.bubble")
             }
         }
 
@@ -224,7 +225,7 @@ struct BottomBar: View {
         // Stats toggle
         Button(action: onStatsTap) {
             Label(
-                showingStats ? "Hide Stats" : "Playback Stats",
+                showingStats ? localization.hideStats : localization.playbackStats,
                 systemImage: "chart.bar.xaxis"
             )
         }

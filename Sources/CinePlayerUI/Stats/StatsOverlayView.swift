@@ -4,42 +4,44 @@ import SwiftUI
 /// Debug stats overlay showing resolution, bitrate, codec, buffer, stalls.
 public struct StatsOverlayView: View {
     let stats: PlayerStats
+    let localization: PlayerLocalization
 
-    public init(stats: PlayerStats) {
+    public init(stats: PlayerStats, localization: PlayerLocalization = .english) {
         self.stats = stats
+        self.localization = localization
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Video
-            SectionHeader("VIDEO")
-            StatRow(label: "Resolution", value: stats.resolution)
-            StatRow(label: "Video Codec", value: stats.videoCodec)
-            StatRow(label: "Frame Rate", value: stats.videoFPS)
-            StatRow(label: "Playback Rate", value: stats.playbackRate)
-            StatRow(label: "Dropped Frames", value: stats.droppedFrames)
+            SectionHeader(localization.statsVideo)
+            StatRow(label: localization.statsResolution, value: stats.resolution)
+            StatRow(label: localization.statsVideoCodec, value: stats.videoCodec)
+            StatRow(label: localization.statsFrameRate, value: stats.videoFPS)
+            StatRow(label: localization.statsPlaybackRate, value: stats.playbackRate)
+            StatRow(label: localization.statsDroppedFrames, value: stats.droppedFrames)
 
             Divider().overlay(Color.white.opacity(0.2))
 
             // Audio & Subtitles
-            SectionHeader("AUDIO / SUBS")
-            StatRow(label: "Audio Codec", value: stats.audioCodec)
-            StatRow(label: "Audio Track", value: stats.audioTrack)
-            StatRow(label: "Subtitle", value: stats.subtitleTrack)
+            SectionHeader(localization.statsAudioSubs)
+            StatRow(label: localization.statsAudioCodec, value: stats.audioCodec)
+            StatRow(label: localization.statsAudioTrack, value: stats.audioTrack)
+            StatRow(label: localization.statsSubtitle, value: stats.subtitleTrack)
 
             Divider().overlay(Color.white.opacity(0.2))
 
             // Network
-            SectionHeader("NETWORK")
-            StatRow(label: "Avg Bitrate", value: stats.avgBitrate)
-            StatRow(label: "Cur Bitrate", value: stats.currentBitrate)
-            StatRow(label: "Observed BR", value: stats.observedBitrate)
-            StatRow(label: "Throughput", value: stats.throughput)
-            StatRow(label: "Buffer", value: stats.bufferedDuration)
-            StatRow(label: "Stalls", value: stats.stallCount)
-            StatRow(label: "Network Type", value: stats.networkType)
-            StatRow(label: "Stream Type", value: stats.streamType)
-            StatRow(label: "Source", value: stats.uri)
+            SectionHeader(localization.statsNetwork)
+            StatRow(label: localization.statsAvgBitrate, value: stats.avgBitrate)
+            StatRow(label: localization.statsCurBitrate, value: stats.currentBitrate)
+            StatRow(label: localization.statsObservedBR, value: stats.observedBitrate)
+            StatRow(label: localization.statsThroughput, value: stats.throughput)
+            StatRow(label: localization.statsBuffer, value: stats.bufferedDuration)
+            StatRow(label: localization.statsStalls, value: stats.stallCount)
+            StatRow(label: localization.statsNetworkType, value: stats.networkType)
+            StatRow(label: localization.statsStreamType, value: stats.streamType)
+            StatRow(label: localization.statsSource, value: stats.uri)
         }
         .padding(10)
         .background(Color.black.opacity(0.7))

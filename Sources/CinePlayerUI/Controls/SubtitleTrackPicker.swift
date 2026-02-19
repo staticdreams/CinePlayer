@@ -6,6 +6,7 @@ public struct SubtitleTrackPicker: View {
     let tracks: [any PlayerSubtitleTrack]
     let selectedIndex: Int?
     let subtitlesOff: Bool
+    let localization: PlayerLocalization
     let onSelect: (Int) -> Void
     let onDisable: () -> Void
     let onDismiss: () -> Void
@@ -14,6 +15,7 @@ public struct SubtitleTrackPicker: View {
         tracks: [any PlayerSubtitleTrack],
         selectedIndex: Int?,
         subtitlesOff: Bool,
+        localization: PlayerLocalization = .english,
         onSelect: @escaping (Int) -> Void,
         onDisable: @escaping () -> Void,
         onDismiss: @escaping () -> Void
@@ -21,6 +23,7 @@ public struct SubtitleTrackPicker: View {
         self.tracks = tracks
         self.selectedIndex = selectedIndex
         self.subtitlesOff = subtitlesOff
+        self.localization = localization
         self.onSelect = onSelect
         self.onDisable = onDisable
         self.onDismiss = onDismiss
@@ -34,7 +37,7 @@ public struct SubtitleTrackPicker: View {
                     onDisable()
                 } label: {
                     HStack {
-                        Text("Off")
+                        Text(localization.off)
                             .foregroundStyle(.primary)
                         Spacer()
                         if subtitlesOff {
@@ -72,11 +75,11 @@ public struct SubtitleTrackPicker: View {
                     }
                 }
             }
-            .navigationTitle("Subtitles")
+            .navigationTitle(localization.subtitles)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done", action: onDismiss)
+                    Button(localization.done, action: onDismiss)
                 }
             }
         }

@@ -1,0 +1,31 @@
+extension PlayerLocalization {
+    public static let russian = PlayerLocalization(
+        playbackSpeed: "Скорость",
+        audio: "Аудио",
+        subtitles: "Субтитры",
+        playbackStats: "Статистика",
+        hideStats: "Скрыть статистику",
+        done: "Готово",
+        off: "Выкл",
+        statsVideo: "ВИДЕО",
+        statsAudioSubs: "АУДИО / СУБТИТРЫ",
+        statsNetwork: "СЕТЬ",
+        statsResolution: "Разрешение",
+        statsVideoCodec: "Видеокодек",
+        statsFrameRate: "Частота кадров",
+        statsPlaybackRate: "Скорость воспр.",
+        statsDroppedFrames: "Пропущ. кадры",
+        statsAudioCodec: "Аудиокодек",
+        statsAudioTrack: "Аудиодорожка",
+        statsSubtitle: "Субтитры",
+        statsAvgBitrate: "Сред. битрейт",
+        statsCurBitrate: "Тек. битрейт",
+        statsObservedBR: "Наблюд. битрейт",
+        statsThroughput: "Пропускн. спос.",
+        statsBuffer: "Буфер",
+        statsStalls: "Задержки",
+        statsNetworkType: "Тип сети",
+        statsStreamType: "Тип потока",
+        statsSource: "Источник"
+    )
+}

@@ -1,0 +1,31 @@
+extension PlayerLocalization {
+    public static let english = PlayerLocalization(
+        playbackSpeed: "Playback Speed",
+        audio: "Audio",
+        subtitles: "Subtitles",
+        playbackStats: "Playback Stats",
+        hideStats: "Hide Stats",
+        done: "Done",
+        off: "Off",
+        statsVideo: "VIDEO",
+        statsAudioSubs: "AUDIO / SUBS",
+        statsNetwork: "NETWORK",
+        statsResolution: "Resolution",
+        statsVideoCodec: "Video Codec",
+        statsFrameRate: "Frame Rate",
+        statsPlaybackRate: "Playback Rate",
+        statsDroppedFrames: "Dropped Frames",
+        statsAudioCodec: "Audio Codec",
+        statsAudioTrack: "Audio Track",
+        statsSubtitle: "Subtitle",
+        statsAvgBitrate: "Avg Bitrate",
+        statsCurBitrate: "Cur Bitrate",
+        statsObservedBR: "Observed BR",
+        statsThroughput: "Throughput",
+        statsBuffer: "Buffer",
+        statsStalls: "Stalls",
+        statsNetworkType: "Network Type",
+        statsStreamType: "Stream Type",
+        statsSource: "Source"
+    )
+}
