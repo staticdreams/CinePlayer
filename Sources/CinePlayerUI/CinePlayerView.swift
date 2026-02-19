@@ -41,6 +41,7 @@ public struct CinePlayerView: View {
                 engine: engine,
                 controlsVisibility: controlsVisibility,
                 title: title,
+                showingStats: showStats,
                 onClose: {
                     engine.deactivate()
                     dismiss()
@@ -53,6 +54,10 @@ public struct CinePlayerView: View {
                 },
                 onSubtitleTrackTap: {
                     showSubtitlePicker = true
+                },
+                onStatsTap: {
+                    showStats.toggle()
+                    engine.isCollectingStats = showStats
                 }
             )
 

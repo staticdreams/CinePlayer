@@ -6,8 +6,10 @@ import SwiftUI
 struct BottomBar: View {
     let engine: PlayerEngine
     let title: String
+    let showingStats: Bool
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
+    let onStatsTap: () -> Void
     let onInteraction: () -> Void
     let onMenuOpen: () -> Void
 
@@ -69,7 +71,7 @@ struct BottomBar: View {
 
                 Spacer(minLength: 12)
 
-                // Options pill — audio, speed, subtitles (all inline)
+                // Options pill — audio, speed, subtitles, stats (all inline)
                 HStack(spacing: 0) {
                     if !engine.trackState.audioTracks.isEmpty {
                         Button(action: onAudioTrackTap) {
@@ -90,6 +92,13 @@ struct BottomBar: View {
                                 .foregroundStyle(.white)
                                 .frame(width: 44, height: 44)
                         }
+                    }
+
+                    Button(action: onStatsTap) {
+                        Image(systemName: "chart.bar.xaxis")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(showingStats ? .blue : .white)
+                            .frame(width: 44, height: 44)
                     }
                 }
                 .pillGlass()
@@ -187,6 +196,16 @@ struct BottomBar: View {
             Button(action: onSubtitleTrackTap) {
                 Label("Subtitles", systemImage: "captions.bubble")
             }
+        }
+
+        Divider()
+
+        // Stats toggle
+        Button(action: onStatsTap) {
+            Label(
+                showingStats ? "Hide Stats" : "Playback Stats",
+                systemImage: "chart.bar.xaxis"
+            )
         }
     }
 

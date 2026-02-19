@@ -14,6 +14,11 @@ public struct PlayerStats: Sendable {
     public var playbackRate: String = "N/A"
     public var networkType: String = "N/A"
     public var stallCount: String = "N/A"
+    public var streamType: String = "N/A"
+    public var videoFPS: String = "N/A"
+    public var audioTrack: String = "N/A"
+    public var subtitleTrack: String = "N/A"
+    public var uri: String = "N/A"
 
     public init() {}
 

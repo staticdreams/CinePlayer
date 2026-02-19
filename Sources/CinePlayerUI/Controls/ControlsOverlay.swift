@@ -7,10 +7,12 @@ struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
     let title: String
+    let showingStats: Bool
     let onClose: () -> Void
     let onPiPTap: () -> Void
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
+    let onStatsTap: () -> Void
 
     var body: some View {
         ZStack {
@@ -68,6 +70,7 @@ struct ControlsOverlay: View {
                     BottomBar(
                         engine: engine,
                         title: title,
+                        showingStats: showingStats,
                         onAudioTrackTap: {
                             onAudioTrackTap()
                             controlsVisibility.cancelTimer()
@@ -75,6 +78,10 @@ struct ControlsOverlay: View {
                         onSubtitleTrackTap: {
                             onSubtitleTrackTap()
                             controlsVisibility.cancelTimer()
+                        },
+                        onStatsTap: {
+                            onStatsTap()
+                            controlsVisibility.resetTimer()
                         },
                         onInteraction: {
                             controlsVisibility.resetTimer()

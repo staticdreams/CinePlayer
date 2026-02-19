@@ -7,6 +7,11 @@ final class AccessLogObserver {
     private var lastTrackInfoUpdate: Date = .distantPast
     private let trackInfoUpdateInterval: TimeInterval = 2.0
 
+    // Cache codec/FPS once discovered — these don't change mid-playback.
+    private var cachedVideoCodec: String?
+    private var cachedAudioCodec: String?
+    private var cachedVideoFPS: String?
+
     /// Collects current stats from the player item.
     func collectStats(from item: AVPlayerItem, player: AVPlayer) async -> PlayerStats {
         var stats = PlayerStats()
@@ -20,6 +25,10 @@ final class AccessLogObserver {
             stats.droppedFrames = "\(event.numberOfDroppedVideoFrames)"
             stats.stallCount = "\(event.numberOfStalls)"
             stats.networkType = event.playbackType ?? "Unknown"
+            if let uri = event.uri, !uri.isEmpty {
+                stats.uri = (uri as NSString).lastPathComponent
+            }
+            stats.streamType = event.playbackSessionID != nil ? "HLS" : "Progressive"
         }
 
         // Buffer stats.
@@ -37,41 +46,74 @@ final class AccessLogObserver {
             stats.resolution = "\(Int(size.width))\u{00D7}\(Int(size.height))"
         }
 
-        // Codec info (throttled, expensive).
+        // Current audio/subtitle selection.
+        if let group = try? await item.asset.loadMediaSelectionGroup(for: .audible),
+           let selected = item.currentMediaSelection.selectedMediaOption(in: group) {
+            stats.audioTrack = selected.displayName
+        }
+        if let group = try? await item.asset.loadMediaSelectionGroup(for: .legible),
+           let selected = item.currentMediaSelection.selectedMediaOption(in: group) {
+            stats.subtitleTrack = selected.displayName
+        } else {
+            stats.subtitleTrack = "Off"
+        }
+
+        // Apply cached codec/FPS if already discovered.
+        if let v = cachedVideoCodec { stats.videoCodec = v }
+        if let a = cachedAudioCodec { stats.audioCodec = a }
+        if let f = cachedVideoFPS { stats.videoFPS = f }
+
+        // Codec + FPS info (throttled, expensive). Keep trying until found.
+        let allFound = cachedVideoCodec != nil && cachedAudioCodec != nil && cachedVideoFPS != nil
         let now = Date()
-        if now.timeIntervalSince(lastTrackInfoUpdate) >= trackInfoUpdateInterval {
+        if !allFound && now.timeIntervalSince(lastTrackInfoUpdate) >= trackInfoUpdateInterval {
             lastTrackInfoUpdate = now
-            await updateCodecInfo(from: item, stats: &stats)
+            updateCodecInfo(from: item, stats: &stats)
         }
 
         return stats
     }
 
-    private func updateCodecInfo(from item: AVPlayerItem, stats: inout PlayerStats) async {
-        do {
-            let tracks = try await item.asset.load(.tracks)
-            for track in tracks {
-                let mediaType = track.mediaType
-                let formatDescriptions = try await track.load(.formatDescriptions)
-                guard let formatDesc = formatDescriptions.first else { continue }
+    /// Discovers codec and FPS from the player item's tracks.
+    ///
+    /// Uses the synchronous `AVPlayerItemTrack` API which works reliably
+    /// for both local files and downloaded HLS `.movpkg` bundles.
+    /// The async `AVAssetTrack.load(.formatDescriptions)` often fails
+    /// for HLS content where tracks are dynamically assembled.
+    @MainActor
+    private func updateCodecInfo(from item: AVPlayerItem, stats: inout PlayerStats) {
+        for playerTrack in item.tracks {
+            guard let assetTrack = playerTrack.assetTrack else { continue }
+            let mediaType = assetTrack.mediaType
 
-                let codecType = CMFormatDescriptionGetMediaSubType(formatDesc)
-                let codecName = PlayerStats.fourCharCodeToString(codecType)
+            // Format descriptions are available synchronously from assetTrack.
+            let formatDescriptions = assetTrack.formatDescriptions as? [CMFormatDescription] ?? []
+            guard let formatDesc = formatDescriptions.first else { continue }
 
-                if mediaType == .video {
-                    stats.videoCodec = codecName
-                    if stats.resolution == "N/A" {
-                        let dims = CMVideoFormatDescriptionGetDimensions(formatDesc)
-                        if dims.width > 0 && dims.height > 0 {
-                            stats.resolution = "\(dims.width)\u{00D7}\(dims.height)"
-                        }
+            let codecType = CMFormatDescriptionGetMediaSubType(formatDesc)
+            let codecName = PlayerStats.fourCharCodeToString(codecType)
+
+            if mediaType == .video {
+                stats.videoCodec = codecName
+                cachedVideoCodec = codecName
+
+                if stats.resolution == "N/A" {
+                    let dims = CMVideoFormatDescriptionGetDimensions(formatDesc)
+                    if dims.width > 0 && dims.height > 0 {
+                        stats.resolution = "\(dims.width)\u{00D7}\(dims.height)"
                     }
-                } else if mediaType == .audio {
-                    stats.audioCodec = codecName
                 }
+
+                let fps = assetTrack.nominalFrameRate
+                if fps > 0 {
+                    let formatted = String(format: "%.2f fps", fps)
+                    stats.videoFPS = formatted
+                    cachedVideoFPS = formatted
+                }
+            } else if mediaType == .audio {
+                stats.audioCodec = codecName
+                cachedAudioCodec = codecName
             }
-        } catch {
-            // Non-fatal.
         }
     }
 }
