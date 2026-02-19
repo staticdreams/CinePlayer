@@ -1,7 +1,7 @@
 import CinePlayerCore
 import SwiftUI
 
-/// Menu-based speed picker button.
+/// Menu-based speed picker displayed as an icon button for the options pill.
 struct SpeedPicker: View {
     let speeds: [PlaybackSpeed]
     let currentRate: Float
@@ -9,6 +9,10 @@ struct SpeedPicker: View {
 
     private var currentSpeed: PlaybackSpeed {
         speeds.first(where: { abs($0.rate - currentRate) < 0.01 }) ?? .normal
+    }
+
+    private var isNonStandardRate: Bool {
+        abs(currentRate - 1.0) > 0.01
     }
 
     var body: some View {
@@ -26,12 +30,10 @@ struct SpeedPicker: View {
                 }
             }
         } label: {
-            Text(currentSpeed.localizedName)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.white.opacity(0.15), in: Capsule())
+            Image(systemName: "gauge.with.dots.needle.33percent")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(isNonStandardRate ? .orange : .white)
+                .frame(width: 44, height: 36)
         }
     }
 }

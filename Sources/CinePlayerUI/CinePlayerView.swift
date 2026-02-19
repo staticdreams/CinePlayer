@@ -197,7 +197,7 @@ extension CinePlayerView {
         return view
     }
 
-    /// Sets the title displayed in the top bar.
+    /// Sets the title displayed above the progress bar.
     public func title(_ title: String) -> CinePlayerView {
         var view = self
         view.title = title

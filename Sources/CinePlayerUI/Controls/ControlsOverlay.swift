@@ -1,7 +1,8 @@
 import CinePlayerCore
 import SwiftUI
 
-/// Overlay combining top, center, and bottom controls with auto-hide and gradient backgrounds.
+/// Overlay combining top, center, and bottom controls with auto-hide.
+/// No gradient backgrounds — uses glass material on individual controls (Apple style).
 struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
@@ -22,34 +23,21 @@ struct ControlsOverlay: View {
                 }
 
             if controlsVisibility.isVisible {
-                // Top gradient
-                VStack {
-                    LinearGradient(
-                        colors: [.black.opacity(0.6), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 100)
-                    Spacer()
-                }
-                .allowsHitTesting(false)
+                // Subtle dim overlay for readability (not a gradient — uniform)
+                Color.black.opacity(0.25)
+                    .allowsHitTesting(false)
+                    .ignoresSafeArea()
 
-                // Bottom gradient
+                // Controls layout
                 VStack {
-                    Spacer()
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.6)],
-                        startPoint: .top,
-                        endPoint: .bottom
+                    TopBar(
+                        onClose: onClose,
+                        onPiPTap: nil,
+                        onAirPlayTap: nil
                     )
-                    .frame(height: 160)
-                }
-                .allowsHitTesting(false)
 
-                // Controls
-                VStack {
-                    TopBar(title: title, onClose: onClose)
                     Spacer()
+
                     CenterControls(
                         isPlaying: engine.state.isPlaying,
                         onSkipBackward: {
@@ -65,9 +53,12 @@ struct ControlsOverlay: View {
                             controlsVisibility.resetTimer()
                         }
                     )
+
                     Spacer()
+
                     BottomBar(
                         engine: engine,
+                        title: title,
                         onAudioTrackTap: {
                             onAudioTrackTap()
                             controlsVisibility.cancelTimer()
@@ -75,6 +66,9 @@ struct ControlsOverlay: View {
                         onSubtitleTrackTap: {
                             onSubtitleTrackTap()
                             controlsVisibility.cancelTimer()
+                        },
+                        onSeekDrag: {
+                            controlsVisibility.resetTimer()
                         }
                     )
                 }
