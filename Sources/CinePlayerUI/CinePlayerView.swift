@@ -1,13 +1,23 @@
 import AVFoundation
 import CinePlayerCore
+import CinePlayerNowPlaying
 import CinePlayerPiP
 import SwiftUI
+import UIKit
+
+/// Now Playing metadata for lock screen / control center integration.
+private struct NowPlayingMetadata {
+    let title: String
+    let artist: String?
+    let artwork: UIImage?
+}
 
 /// The main public view for CinePlayer. Hosts the video surface and controls overlay.
 public struct CinePlayerView: View {
     @State private var engine: PlayerEngine
     @State private var controlsVisibility = ControlsVisibility()
     @State private var pipManager = PiPManager()
+    @State private var nowPlayingManager = NowPlayingManager()
     @State private var showAudioPicker = false
     @State private var showSubtitlePicker = false
     @State private var showStats = false
@@ -15,6 +25,7 @@ public struct CinePlayerView: View {
 
     // Configurable via modifiers
     private var titleInfo = PlayerTitleInfo("")
+    private var nowPlayingMetadata: NowPlayingMetadata?
     private var onProgressUpdateCallback: ((TimeInterval, TimeInterval) -> Void)?
     private var onPlaybackEndCallback: (() -> Void)?
 
@@ -78,7 +89,15 @@ public struct CinePlayerView: View {
         .persistentSystemOverlays(.hidden)
         .task {
             // Wire up callbacks before activating.
-            engine.onProgressUpdate = onProgressUpdateCallback
+            if let nowPlayingMetadata {
+                let originalCallback = onProgressUpdateCallback
+                engine.onProgressUpdate = { [nowPlayingManager] currentTime, duration in
+                    originalCallback?(currentTime, duration)
+                    nowPlayingManager.updatePlaybackPosition(engine: engine)
+                }
+            } else {
+                engine.onProgressUpdate = onProgressUpdateCallback
+            }
             engine.onPlaybackEnd = { [onPlaybackEndCallback] in
                 onPlaybackEndCallback?()
             }
@@ -86,10 +105,20 @@ public struct CinePlayerView: View {
             setAudioSession()
             engine.activate()
             controlsVisibility.show()
+
+            if let nowPlayingMetadata {
+                nowPlayingManager.configure(
+                    engine: engine,
+                    title: nowPlayingMetadata.title,
+                    artist: nowPlayingMetadata.artist,
+                    artwork: nowPlayingMetadata.artwork
+                )
+            }
         }
         .onDisappear {
             engine.deactivate()
             pipManager.tearDown()
+            nowPlayingManager.tearDown()
             restoreAudioSession()
         }
         // Audio picker sheet
@@ -239,6 +268,13 @@ extension CinePlayerView {
     public func hlsAudioTracks(_ tracks: [HLSAudioTrackInfo]) -> CinePlayerView {
         var view = self
         view.engine.pendingHLSAudioTracks = tracks
+        return view
+    }
+
+    /// Enables Now Playing integration for lock screen and control center.
+    public func nowPlaying(title: String, artist: String? = nil, artwork: UIImage? = nil) -> CinePlayerView {
+        var view = self
+        view.nowPlayingMetadata = NowPlayingMetadata(title: title, artist: artist, artwork: artwork)
         return view
     }
 }

@@ -6,6 +6,9 @@ import UIKit
 @MainActor
 public final class NowPlayingManager {
     private var engine: PlayerEngine?
+    private var storedTitle: String = ""
+    private var storedArtist: String?
+    private var storedArtwork: MPMediaItemArtwork?
 
     public init() {}
 
@@ -17,6 +20,13 @@ public final class NowPlayingManager {
         artwork: UIImage? = nil
     ) {
         self.engine = engine
+        self.storedTitle = title
+        self.storedArtist = artist
+        if let artwork {
+            self.storedArtwork = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
+        } else {
+            self.storedArtwork = nil
+        }
         setupRemoteCommands(engine: engine)
         updateNowPlayingInfo(title: title, artist: artist, artwork: artwork, engine: engine)
     }
@@ -28,6 +38,12 @@ public final class NowPlayingManager {
         artwork: UIImage? = nil,
         engine: PlayerEngine
     ) {
+        self.storedTitle = title
+        self.storedArtist = artist
+        if let artwork {
+            self.storedArtwork = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
+        }
+
         var info: [String: Any] = [
             MPMediaItemPropertyTitle: title,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: engine.state.currentTime,
@@ -39,9 +55,28 @@ public final class NowPlayingManager {
             info[MPMediaItemPropertyArtist] = artist
         }
 
-        if let artwork {
-            let artworkItem = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
-            info[MPMediaItemPropertyArtwork] = artworkItem
+        if let storedArtwork {
+            info[MPMediaItemPropertyArtwork] = storedArtwork
+        }
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    /// Lightweight update — only refreshes elapsed time, duration, and rate using stored metadata.
+    public func updatePlaybackPosition(engine: PlayerEngine) {
+        var info: [String: Any] = [
+            MPMediaItemPropertyTitle: storedTitle,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: engine.state.currentTime,
+            MPMediaItemPropertyPlaybackDuration: engine.state.duration,
+            MPNowPlayingInfoPropertyPlaybackRate: engine.state.isPlaying ? Double(engine.state.rate) : 0.0,
+        ]
+
+        if let storedArtist {
+            info[MPMediaItemPropertyArtist] = storedArtist
+        }
+
+        if let storedArtwork {
+            info[MPMediaItemPropertyArtwork] = storedArtwork
         }
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
