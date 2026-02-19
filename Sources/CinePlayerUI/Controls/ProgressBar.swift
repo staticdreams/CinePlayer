@@ -3,11 +3,13 @@ import SwiftUI
 
 /// Seekable progress bar inside a glass pill, matching Apple's native player.
 /// Layout: [elapsed time] [slider track] [remaining time] all inside a single pill.
+/// When `embedded` is true, the glass pill background is omitted (for use inside a larger glass container).
 struct ProgressBar: View {
     let currentTime: TimeInterval
     let duration: TimeInterval
     let onSeek: (TimeInterval) -> Void
     let onDragChanged: (() -> Void)?
+    var embedded: Bool = false
 
     @State private var isDragging = false
     @State private var dragProgress: Double = 0
@@ -16,12 +18,14 @@ struct ProgressBar: View {
         currentTime: TimeInterval,
         duration: TimeInterval,
         onSeek: @escaping (TimeInterval) -> Void,
-        onDragChanged: (() -> Void)? = nil
+        onDragChanged: (() -> Void)? = nil,
+        embedded: Bool = false
     ) {
         self.currentTime = currentTime
         self.duration = duration
         self.onSeek = onSeek
         self.onDragChanged = onDragChanged
+        self.embedded = embedded
     }
 
     private var displayProgress: Double {
@@ -41,6 +45,14 @@ struct ProgressBar: View {
     private let thumbDragging: CGFloat = 18
 
     var body: some View {
+        if embedded {
+            progressContent
+        } else {
+            progressContent.pillGlass()
+        }
+    }
+
+    private var progressContent: some View {
         HStack(spacing: 12) {
             // Elapsed time
             Text(formatTime(displayCurrentTime))
@@ -98,9 +110,8 @@ struct ProgressBar: View {
                 .foregroundStyle(.white.opacity(0.9))
                 .frame(minWidth: 60, alignment: .trailing)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .pillGlass()
+        .padding(.horizontal, embedded ? 12 : 16)
+        .padding(.vertical, embedded ? 6 : 12)
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {

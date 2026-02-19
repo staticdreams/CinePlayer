@@ -11,30 +11,33 @@ struct TopBar: View {
     let onMuteTap: () -> Void
     let onInteraction: () -> Void
 
+    private let buttonSize: CGFloat = 48
+
     var body: some View {
         HStack(spacing: 8) {
             // Close button — circular glass
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)
             }
-            .circleGlass(size: 42)
+            .circleGlass(size: buttonSize)
 
-            // PiP + AirPlay pill (consistent 42pt height)
+            // PiP + AirPlay pill (consistent height)
             HStack(spacing: 0) {
                 Button {
                     onPiPTap()
                     onInteraction()
                 } label: {
                     Image(systemName: "pip.enter")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 42, height: 42)
+                        .frame(width: buttonSize, height: buttonSize)
                 }
 
                 AirPlayRouteView()
-                    .frame(width: 42, height: 42)
+                    .scaleEffect(0.7)
+                    .frame(width: buttonSize, height: buttonSize)
             }
             .pillGlass()
 

@@ -8,6 +8,7 @@ struct CircleGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(width: size, height: size)
+            .contentShape(Circle())
             .glassCircle(size: size)
     }
 }

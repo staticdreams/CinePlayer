@@ -14,21 +14,16 @@ struct ControlsOverlay: View {
 
     var body: some View {
         ZStack {
-            // Tap area to toggle controls (full bleed)
-            Color.clear
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        controlsVisibility.toggle()
-                    }
-                }
-
             if controlsVisibility.isVisible {
-                // Subtle dim (full bleed)
+                // Dim background — tap empty areas to hide controls.
+                // Buttons in the VStack above take tap priority.
                 Color.black.opacity(0.25)
-                    .allowsHitTesting(false)
                     .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            controlsVisibility.hide()
+                        }
+                    }
 
                 // Controls layout (respects safe area)
                 VStack {
@@ -62,6 +57,7 @@ struct ControlsOverlay: View {
                             controlsVisibility.resetTimer()
                         }
                     )
+                    .offset(y: 14)
 
                     Spacer()
 
@@ -85,6 +81,16 @@ struct ControlsOverlay: View {
                     )
                 }
                 .transition(.opacity)
+            } else {
+                // Controls hidden — tap anywhere to show them.
+                Color.clear
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            controlsVisibility.show()
+                        }
+                    }
             }
         }
     }
