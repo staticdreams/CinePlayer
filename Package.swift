@@ -17,7 +17,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "CinePlayerCore"),
-        .target(name: "CinePlayerUI", dependencies: ["CinePlayerCore"]),
+        .target(name: "CinePlayerUI", dependencies: ["CinePlayerCore", "CinePlayerPiP"]),
         .target(name: "CinePlayerPiP", dependencies: ["CinePlayerCore"]),
         .target(name: "CinePlayerAirPlay"),
         .target(name: "CinePlayerNowPlaying", dependencies: ["CinePlayerCore"]),

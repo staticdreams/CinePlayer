@@ -8,15 +8,15 @@ struct CenterControls: View {
     let onTogglePlayPause: () -> Void
     let onSkipForward: () -> Void
 
-    private let playPauseSize: CGFloat = 74
-    private let skipSize: CGFloat = 54
+    private let playPauseSize: CGFloat = 76
+    private let skipSize: CGFloat = 56
 
     var body: some View {
         HStack(spacing: 48) {
             // Skip backward
             Button(action: onSkipBackward) {
                 Image(systemName: "gobackward.10")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
             }
             .circleGlass(size: skipSize)
@@ -24,7 +24,7 @@ struct CenterControls: View {
             // Play / Pause — larger
             Button(action: onTogglePlayPause) {
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 36, weight: .bold))
                     .foregroundStyle(.white)
                     .contentTransition(.symbolEffect(.replace))
             }
@@ -33,7 +33,7 @@ struct CenterControls: View {
             // Skip forward
             Button(action: onSkipForward) {
                 Image(systemName: "goforward.10")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(.white)
             }
             .circleGlass(size: skipSize)

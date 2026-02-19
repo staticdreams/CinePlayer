@@ -199,6 +199,12 @@ public final class PlayerEngine {
         configuration.gravity = configuration.gravity.toggled
     }
 
+    /// Toggles mute on/off.
+    public func toggleMute() {
+        player.isMuted.toggle()
+        state.isMuted = player.isMuted
+    }
+
     // MARK: - Track selection (convenience)
 
     public func selectAudioTrack(_ track: any PlayerAudioTrack) {

@@ -1,11 +1,13 @@
 import AVFoundation
 import CinePlayerCore
+import CinePlayerPiP
 import SwiftUI
 
 /// The main public view for CinePlayer. Hosts the video surface and controls overlay.
 public struct CinePlayerView: View {
     @State private var engine: PlayerEngine
     @State private var controlsVisibility = ControlsVisibility()
+    @State private var pipManager = PiPManager()
     @State private var showAudioPicker = false
     @State private var showSubtitlePicker = false
     @State private var showStats = false
@@ -22,16 +24,22 @@ public struct CinePlayerView: View {
 
     public var body: some View {
         ZStack {
+            // Full-bleed background + video (ignore safe area)
             Color.black.ignoresSafeArea()
 
-            // Video surface
             VideoSurfaceView(
                 player: engine.player,
-                gravity: engine.configuration.gravity
+                gravity: engine.configuration.gravity,
+                onPlayerLayerReady: { layer in
+                    pipManager.configure(with: layer)
+                }
             )
             .ignoresSafeArea()
+            .onTapGesture(count: 2) {
+                engine.toggleZoom()
+            }
 
-            // Controls overlay
+            // Controls overlay (respects safe area — stays below Dynamic Island, above home indicator)
             ControlsOverlay(
                 engine: engine,
                 controlsVisibility: controlsVisibility,
@@ -39,6 +47,9 @@ public struct CinePlayerView: View {
                 onClose: {
                     engine.deactivate()
                     dismiss()
+                },
+                onPiPTap: {
+                    pipManager.toggle()
                 },
                 onAudioTrackTap: {
                     showAudioPicker = true
@@ -61,10 +72,6 @@ public struct CinePlayerView: View {
                 .allowsHitTesting(false)
             }
         }
-        .onTapGesture(count: 2) {
-            engine.toggleZoom()
-        }
-        .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .task {
@@ -80,6 +87,7 @@ public struct CinePlayerView: View {
         }
         .onDisappear {
             engine.deactivate()
+            pipManager.tearDown()
             restoreAudioSession()
         }
         // Audio picker sheet

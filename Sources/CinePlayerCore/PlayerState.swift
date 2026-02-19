@@ -18,6 +18,9 @@ public struct PlayerState: Sendable {
     /// Whether the current item has finished playing.
     public var didFinishPlaying: Bool = false
 
+    /// Whether audio is muted.
+    public var isMuted: Bool = false
+
     /// Current playback rate.
     public var rate: Float = 0
 

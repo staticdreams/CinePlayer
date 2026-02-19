@@ -52,13 +52,13 @@ CinePlayer (umbrella)
 └── CinePlayerNowPlaying — Now Playing info & remote commands
 ```
 
-| Module | Dependencies | Description |
-|--------|-------------|-------------|
-| `CinePlayerCore` | — | Player engine, state management, track protocols, HLS interceptor |
-| `CinePlayerUI` | `CinePlayerCore` | Full player view with controls, pickers, gestures |
-| `CinePlayerPiP` | `CinePlayerCore` | `AVPictureInPictureController` lifecycle |
-| `CinePlayerAirPlay` | — | SwiftUI wrapper for `AVRoutePickerView` |
-| `CinePlayerNowPlaying` | `CinePlayerCore` | `MPNowPlayingInfoCenter` + remote commands |
+| Module                 | Dependencies     | Description                                                       |
+| ---------------------- | ---------------- | ----------------------------------------------------------------- |
+| `CinePlayerCore`       | —                | Player engine, state management, track protocols, HLS interceptor |
+| `CinePlayerUI`         | `CinePlayerCore` | Full player view with controls, pickers, gestures                 |
+| `CinePlayerPiP`        | `CinePlayerCore` | `AVPictureInPictureController` lifecycle                          |
+| `CinePlayerAirPlay`    | —                | SwiftUI wrapper for `AVRoutePickerView`                           |
+| `CinePlayerNowPlaying` | `CinePlayerCore` | `MPNowPlayingInfoCenter` + remote commands                        |
 
 ## Installation
 
@@ -74,7 +74,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-org/CinePlayer.git", from: "1.0.0")
+    .package(url: "https://github.com/staticdreams/CinePlayer.git", from: "1.0.0")
 ]
 ```
 
@@ -97,10 +97,10 @@ Then add the products to your target:
 ### Requirements
 
 | Requirement | Version |
-|-------------|---------|
-| iOS | 17.0+ |
-| Swift | 5.9+ |
-| Xcode | 15.0+ |
+| ----------- | ------- |
+| iOS         | 17.0+   |
+| Swift       | 5.9+    |
+| Xcode       | 15.0+   |
 
 ## Quick Start
 
@@ -381,20 +381,20 @@ The built-in `CinePlayerView` includes a complete Apple-style control overlay:
 └─────────────────────────────────────────────────┘
 ```
 
-| Control | Action |
-|---------|--------|
-| **X** button | Dismiss player |
-| **PiP** button | Enter Picture-in-Picture |
-| **AirPlay** button | Show AirPlay picker |
-| **Skip back** | Jump back 10 seconds |
-| **Play/Pause** | Toggle playback |
-| **Skip forward** | Jump forward 10 seconds |
-| **Speed** icon | Menu picker (0.5x - 2x) |
-| **Audio** icon | Audio track picker sheet |
-| **Subtitles** icon | Subtitle picker sheet |
-| **Progress bar** | Drag to seek, shows elapsed/remaining time |
-| **Tap anywhere** | Show/hide controls |
-| **Double-tap** | Toggle zoom (fit/fill) |
+| Control            | Action                                     |
+| ------------------ | ------------------------------------------ |
+| **X** button       | Dismiss player                             |
+| **PiP** button     | Enter Picture-in-Picture                   |
+| **AirPlay** button | Show AirPlay picker                        |
+| **Skip back**      | Jump back 10 seconds                       |
+| **Play/Pause**     | Toggle playback                            |
+| **Skip forward**   | Jump forward 10 seconds                    |
+| **Speed** icon     | Menu picker (0.5x - 2x)                    |
+| **Audio** icon     | Audio track picker sheet                   |
+| **Subtitles** icon | Subtitle picker sheet                      |
+| **Progress bar**   | Drag to seek, shows elapsed/remaining time |
+| **Tap anywhere**   | Show/hide controls                         |
+| **Double-tap**     | Toggle zoom (fit/fill)                     |
 
 Controls auto-hide after 4 seconds of inactivity and reappear on any interaction.
 
@@ -402,46 +402,46 @@ Controls auto-hide after 4 seconds of inactivity and reappear on any interaction
 
 ### PlayerConfiguration
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `startTime` | `TimeInterval` | `0` | Resume position in seconds |
-| `autoPlay` | `Bool` | `true` | Start playback when ready |
-| `loop` | `Bool` | `false` | Loop video at end |
-| `speeds` | `[PlaybackSpeed]` | `PlaybackSpeed.standard` | Available speed options |
-| `gravity` | `VideoGravity` | `.resizeAspect` | Video display mode |
+| Property    | Type              | Default                  | Description                |
+| ----------- | ----------------- | ------------------------ | -------------------------- |
+| `startTime` | `TimeInterval`    | `0`                      | Resume position in seconds |
+| `autoPlay`  | `Bool`            | `true`                   | Start playback when ready  |
+| `loop`      | `Bool`            | `false`                  | Loop video at end          |
+| `speeds`    | `[PlaybackSpeed]` | `PlaybackSpeed.standard` | Available speed options    |
+| `gravity`   | `VideoGravity`    | `.resizeAspect`          | Video display mode         |
 
 ### PlayerState
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `currentTime` | `TimeInterval` | Current position in seconds |
-| `duration` | `TimeInterval` | Total duration (0 for live) |
-| `progress` | `Double` | Position as fraction (0...1) |
-| `remainingTime` | `TimeInterval` | Time remaining |
-| `isPlaying` | `Bool` | Currently playing |
-| `isBuffering` | `Bool` | Currently buffering |
-| `didFinishPlaying` | `Bool` | Reached the end |
-| `rate` | `Float` | Current playback rate |
-| `status` | `ItemStatus` | `.unknown` / `.readyToPlay` / `.failed` |
-| `error` | `PlayerError?` | Last error, if any |
+| Property           | Type           | Description                             |
+| ------------------ | -------------- | --------------------------------------- |
+| `currentTime`      | `TimeInterval` | Current position in seconds             |
+| `duration`         | `TimeInterval` | Total duration (0 for live)             |
+| `progress`         | `Double`       | Position as fraction (0...1)            |
+| `remainingTime`    | `TimeInterval` | Time remaining                          |
+| `isPlaying`        | `Bool`         | Currently playing                       |
+| `isBuffering`      | `Bool`         | Currently buffering                     |
+| `didFinishPlaying` | `Bool`         | Reached the end                         |
+| `rate`             | `Float`        | Current playback rate                   |
+| `status`           | `ItemStatus`   | `.unknown` / `.readyToPlay` / `.failed` |
+| `error`            | `PlayerError?` | Last error, if any                      |
 
 ### PlayerError
 
-| Case | Description |
-|------|-------------|
-| `.invalidURL` | The provided URL is invalid |
+| Case                             | Description                    |
+| -------------------------------- | ------------------------------ |
+| `.invalidURL`                    | The provided URL is invalid    |
 | `.playerItemFailed(underlying:)` | AVPlayerItem failed with error |
-| `.assetLoadFailed(underlying:)` | Asset loading failed |
-| `.seekFailed` | Seek operation failed |
-| `.trackSelectionFailed` | Track selection failed |
+| `.assetLoadFailed(underlying:)`  | Asset loading failed           |
+| `.seekFailed`                    | Seek operation failed          |
+| `.trackSelectionFailed`          | Track selection failed         |
 
 ### VideoGravity
 
-| Case | AVFoundation Equivalent | Description |
-|------|------------------------|-------------|
-| `.resizeAspect` | `.resizeAspect` | Letterbox (default) |
-| `.resizeAspectFill` | `.resizeAspectFill` | Fill, may crop |
-| `.resize` | `.resize` | Stretch to fill |
+| Case                | AVFoundation Equivalent | Description         |
+| ------------------- | ----------------------- | ------------------- |
+| `.resizeAspect`     | `.resizeAspect`         | Letterbox (default) |
+| `.resizeAspectFill` | `.resizeAspectFill`     | Fill, may crop      |
+| `.resize`           | `.resize`               | Stretch to fill     |
 
 ## License
 

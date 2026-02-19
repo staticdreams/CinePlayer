@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Reusable glass background modifiers matching Apple's native video player style.
+// MARK: - Glass Circle
 
 struct CircleGlassBackground: ViewModifier {
     var size: CGFloat = 44
@@ -8,25 +8,42 @@ struct CircleGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(width: size, height: size)
-            .background(.ultraThinMaterial, in: Circle())
+            .glassCircle(size: size)
     }
 }
 
+// MARK: - Glass Pill
+
 struct PillGlassBackground: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial, in: Capsule())
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular, in: .capsule)
+        } else {
+            content
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        }
     }
 }
+
+// MARK: - Glass Rounded Rect
 
 struct RoundedRectGlassBackground: ViewModifier {
     var cornerRadius: CGFloat = 12
 
     func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+        } else {
+            content
+                .background(.ultraThinMaterial, in: shape)
+                .overlay(shape.strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        }
     }
 }
+
+// MARK: - View Extensions
 
 extension View {
     func circleGlass(size: CGFloat = 44) -> some View {
@@ -39,5 +56,16 @@ extension View {
 
     func roundedGlass(cornerRadius: CGFloat = 12) -> some View {
         modifier(RoundedRectGlassBackground(cornerRadius: cornerRadius))
+    }
+
+    @ViewBuilder
+    func glassCircle(size: CGFloat) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: .circle)
+        } else {
+            self
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5))
+        }
     }
 }

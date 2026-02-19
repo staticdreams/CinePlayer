@@ -8,7 +8,7 @@ public final class ControlsVisibility {
     public var isVisible: Bool = true
 
     /// How long to wait before auto-hiding (seconds).
-    public var autoHideDelay: TimeInterval = 4.0
+    public var autoHideDelay: TimeInterval = 6.0
 
     private var hideTask: Task<Void, Never>?
 

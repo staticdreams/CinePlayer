@@ -36,38 +36,43 @@ struct ProgressBar: View {
         duration - displayCurrentTime
     }
 
+    private let trackHeight: CGFloat = 6
+    private let thumbNormal: CGFloat = 10
+    private let thumbDragging: CGFloat = 18
+
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             // Elapsed time
             Text(formatTime(displayCurrentTime))
                 .font(.system(size: 13, weight: .medium).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.9))
-                .frame(minWidth: 52, alignment: .leading)
+                .frame(minWidth: 56, alignment: .leading)
 
             // Slider track
             GeometryReader { geometry in
                 let width = geometry.size.width
                 let thumbX = displayProgress * width
+                let currentThumbSize = isDragging ? thumbDragging : thumbNormal
 
                 ZStack(alignment: .leading) {
                     // Track background
                     Capsule()
                         .fill(.white.opacity(0.3))
-                        .frame(height: 4)
+                        .frame(height: trackHeight)
 
                     // Played portion
                     Capsule()
                         .fill(.white)
-                        .frame(width: max(0, thumbX), height: 4)
+                        .frame(width: max(0, thumbX), height: trackHeight)
 
                     // Thumb
                     Circle()
                         .fill(.white)
-                        .frame(width: isDragging ? 14 : 8, height: isDragging ? 14 : 8)
-                        .offset(x: max(0, thumbX - (isDragging ? 7 : 4)))
-                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                        .frame(width: currentThumbSize, height: currentThumbSize)
+                        .offset(x: max(0, thumbX - currentThumbSize / 2))
+                        .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
                 }
-                .frame(height: 20)
+                .frame(height: 24)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -85,16 +90,16 @@ struct ProgressBar: View {
                         }
                 )
             }
-            .frame(height: 20)
+            .frame(height: 24)
 
             // Remaining time (negative)
             Text("-\(formatTime(displayRemainingTime))")
                 .font(.system(size: 13, weight: .medium).monospacedDigit())
                 .foregroundStyle(.white.opacity(0.9))
-                .frame(minWidth: 58, alignment: .trailing)
+                .frame(minWidth: 60, alignment: .trailing)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .pillGlass()
     }
 

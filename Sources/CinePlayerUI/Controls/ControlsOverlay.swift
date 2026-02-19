@@ -2,19 +2,21 @@ import CinePlayerCore
 import SwiftUI
 
 /// Overlay combining top, center, and bottom controls with auto-hide.
-/// No gradient backgrounds — uses glass material on individual controls (Apple style).
+/// The dim background is full-bleed; controls respect safe area insets.
 struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
     let title: String
     let onClose: () -> Void
+    let onPiPTap: () -> Void
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
 
     var body: some View {
         ZStack {
-            // Tap area to toggle controls
+            // Tap area to toggle controls (full bleed)
             Color.clear
+                .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -23,17 +25,24 @@ struct ControlsOverlay: View {
                 }
 
             if controlsVisibility.isVisible {
-                // Subtle dim overlay for readability (not a gradient — uniform)
+                // Subtle dim (full bleed)
                 Color.black.opacity(0.25)
                     .allowsHitTesting(false)
                     .ignoresSafeArea()
 
-                // Controls layout
+                // Controls layout (respects safe area)
                 VStack {
                     TopBar(
+                        isMuted: engine.state.isMuted,
                         onClose: onClose,
-                        onPiPTap: nil,
-                        onAirPlayTap: nil
+                        onPiPTap: onPiPTap,
+                        onMuteTap: {
+                            engine.toggleMute()
+                            controlsVisibility.resetTimer()
+                        },
+                        onInteraction: {
+                            controlsVisibility.resetTimer()
+                        }
                     )
 
                     Spacer()
@@ -67,8 +76,11 @@ struct ControlsOverlay: View {
                             onSubtitleTrackTap()
                             controlsVisibility.cancelTimer()
                         },
-                        onSeekDrag: {
+                        onInteraction: {
                             controlsVisibility.resetTimer()
+                        },
+                        onMenuOpen: {
+                            controlsVisibility.cancelTimer()
                         }
                     )
                 }
