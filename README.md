@@ -36,6 +36,7 @@ CinePlayer is a Swift Package that delivers a full-featured video player built e
 - **Auto-hide controls** — 4-second timeout, tap to show/hide, timer resets on interaction
 - **Double-tap zoom** — Toggle between aspect fit and aspect fill
 - **Stats overlay** — Toggleable via button; shows resolution, codecs, FPS, bitrate, buffer, stalls, active tracks
+- **Localization** — Built-in English and Russian; add new languages with a single file
 - **Loop mode** — Seamless looping for short-form content
 - **Resume playback** — Start from any position with `startTime`
 - **Callbacks** — Progress updates (every 500ms) and playback end notifications
@@ -280,6 +281,43 @@ nowPlaying.tearDown()
 
 This registers remote commands: play, pause, skip forward/backward (10s), and seek to position.
 
+### Localization
+
+CinePlayer ships with English (default) and Russian. Set the language with a single modifier:
+
+```swift
+CinePlayerView(url: videoURL)
+    .language("ru")
+```
+
+For full control, pass a custom `PlayerLocalization`:
+
+```swift
+CinePlayerView(url: videoURL)
+    .localization(.russian)
+```
+
+#### Adding a New Language
+
+Create a single file, e.g. `PlayerLocalization+uk.swift`:
+
+```swift
+extension PlayerLocalization {
+    public static let ukrainian = PlayerLocalization(
+        playbackSpeed: "Швидкість",
+        audio: "Аудіо",
+        subtitles: "Субтитри",
+        // ... all 27 properties
+    )
+}
+```
+
+Then add a case in `PlayerLocalization.init(languageCode:)`:
+
+```swift
+case "uk": self = .ukrainian
+```
+
 ### Using PlayerEngine Directly
 
 For full control, use `PlayerEngine` without `CinePlayerView`:
@@ -430,6 +468,8 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `.startTime(_:)` | `TimeInterval` | Resume position in seconds |
 | `.videoGravity(_:)` | `VideoGravity` | Aspect fit, fill, or stretch |
 | `.loop(_:)` | `Bool` | Loop video at end |
+| `.language(_:)` | `String` | Set UI language by code (e.g. `"en"`, `"ru"`) |
+| `.localization(_:)` | `PlayerLocalization` | Full custom localization |
 | `.onProgressUpdate(_:)` | `(TimeInterval, TimeInterval) -> Void` | Called every 500ms with (currentTime, duration) |
 | `.onPlaybackEnd(_:)` | `() -> Void` | Called when video reaches the end |
 
@@ -452,6 +492,7 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `loop`      | `Bool`            | `false`                  | Loop video at end          |
 | `speeds`    | `[PlaybackSpeed]` | `PlaybackSpeed.standard` | Available speed options    |
 | `gravity`   | `VideoGravity`    | `.resizeAspect`          | Video display mode         |
+| `localization` | `PlayerLocalization` | `.english`            | UI strings localization    |
 
 ### PlayerState
 
@@ -490,6 +531,17 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `networkType`      | Network       | Connection type                          |
 | `streamType`       | Network       | HLS / Local file                         |
 | `uri`              | Network       | Source URL or file path                  |
+
+### PlayerLocalization
+
+A `Sendable` struct holding all 27 user-facing strings in CinePlayer. Built-in presets:
+
+| Static Property | Language |
+| --------------- | -------- |
+| `.english`      | English  |
+| `.russian`      | Russian  |
+
+Create a custom instance by providing all properties to the memberwise `init`, or use `init(languageCode:)` to resolve by ISO 639-1 code (falls back to English for unknown codes).
 
 ### PlayerError
 

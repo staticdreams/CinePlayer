@@ -51,6 +51,7 @@ struct ControlsOverlay: View {
 
                     CenterControls(
                         isPlaying: engine.state.isPlaying,
+                        isLive: engine.state.isLive,
                         onSkipBackward: {
                             engine.skipBackward()
                             controlsVisibility.resetTimer()

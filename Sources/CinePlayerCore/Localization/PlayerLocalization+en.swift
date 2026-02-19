@@ -5,6 +5,8 @@ extension PlayerLocalization {
         subtitles: "Subtitles",
         playbackStats: "Playback Stats",
         hideStats: "Hide Stats",
+        liveIndicator: "LIVE",
+        goLive: "Go Live",
         done: "Done",
         off: "Off",
         statsVideo: "VIDEO",

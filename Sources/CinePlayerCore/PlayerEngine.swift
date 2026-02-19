@@ -189,6 +189,15 @@ public final class PlayerEngine {
         seek(to: target)
     }
 
+    /// Seeks to the live edge of a live stream.
+    public func seekToLiveEdge() {
+        guard let item = player.currentItem else { return }
+        guard let lastRange = item.seekableTimeRanges.last?.timeRangeValue else { return }
+        let liveEdge = CMTimeRangeGetEnd(lastRange)
+        player.seek(to: liveEdge, toleranceBefore: .zero, toleranceAfter: .zero)
+        if !state.isPlaying { play() }
+    }
+
     public func setSpeed(_ speed: PlaybackSpeed) {
         player.rate = speed.rate
         state.rate = speed.rate
@@ -225,11 +234,14 @@ public final class PlayerEngine {
 
             self.state.currentTime = seconds
 
-            // Update duration from current item.
+            // Update duration and live detection from current item.
             if let item = self.player.currentItem {
                 let dur = CMTimeGetSeconds(item.duration)
                 if dur.isFinite && dur > 0 {
                     self.state.duration = dur
+                    self.state.isLive = false
+                } else if item.duration == .indefinite {
+                    self.state.isLive = true
                 }
             }
 

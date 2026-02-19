@@ -3,6 +3,7 @@ import SwiftUI
 
 /// Bottom bar: portrait shows title + "..." menu + progress pill;
 /// landscape shows inline audio/speed/subtitles pill + progress pill.
+/// For live streams, the progress bar is replaced with a LIVE indicator + "Go Live" button.
 struct BottomBar: View {
     let engine: PlayerEngine
     let titleInfo: PlayerTitleInfo
@@ -18,6 +19,10 @@ struct BottomBar: View {
 
     private var isLandscape: Bool {
         verticalSizeClass == .compact
+    }
+
+    private var isLive: Bool {
+        engine.state.isLive
     }
 
     var body: some View {
@@ -42,14 +47,19 @@ struct BottomBar: View {
             }
             .padding(.horizontal, 16)
 
-            // Progress bar (own glass pill)
-            ProgressBar(
-                currentTime: engine.state.currentTime,
-                duration: engine.state.duration,
-                onSeek: { time in engine.seek(to: time) },
-                onDragChanged: onInteraction
-            )
-            .padding(.horizontal, 12)
+            if isLive {
+                liveBar
+                    .padding(.horizontal, 12)
+            } else {
+                // Progress bar (own glass pill)
+                ProgressBar(
+                    currentTime: engine.state.currentTime,
+                    duration: engine.state.duration,
+                    onSeek: { time in engine.seek(to: time) },
+                    onDragChanged: onInteraction
+                )
+                .padding(.horizontal, 12)
+            }
         }
         .padding(.bottom, 12)
     }
@@ -64,7 +74,7 @@ struct BottomBar: View {
 
                 Spacer(minLength: 12)
 
-                // Options pill — audio, speed, subtitles, stats (all inline)
+                // Options pill — audio, speed (hidden for live), subtitles, stats (all inline)
                 HStack(spacing: 0) {
                     if !engine.trackState.audioTracks.isEmpty {
                         Button(action: onAudioTrackTap) {
@@ -75,8 +85,10 @@ struct BottomBar: View {
                         }
                     }
 
-                    // Inline speed menu
-                    speedMenu
+                    if !isLive {
+                        // Inline speed menu
+                        speedMenu
+                    }
 
                     if !engine.trackState.subtitleTracks.isEmpty {
                         Button(action: onSubtitleTrackTap) {
@@ -98,14 +110,19 @@ struct BottomBar: View {
             }
             .padding(.horizontal, 16)
 
-            // Progress bar (own glass pill)
-            ProgressBar(
-                currentTime: engine.state.currentTime,
-                duration: engine.state.duration,
-                onSeek: { time in engine.seek(to: time) },
-                onDragChanged: onInteraction
-            )
-            .padding(.horizontal, 12)
+            if isLive {
+                liveBar
+                    .padding(.horizontal, 12)
+            } else {
+                // Progress bar (own glass pill)
+                ProgressBar(
+                    currentTime: engine.state.currentTime,
+                    duration: engine.state.duration,
+                    onSeek: { time in engine.seek(to: time) },
+                    onDragChanged: onInteraction
+                )
+                .padding(.horizontal, 12)
+            }
         }
         .padding(.bottom, 12)
     }
@@ -182,29 +199,31 @@ struct BottomBar: View {
         }
     }
 
-    /// Portrait-only menu content: speed submenu, audio, subtitles.
+    /// Portrait-only menu content: speed submenu (hidden for live), audio, subtitles.
     @ViewBuilder
     private var menuContent: some View {
-        // Playback Speed submenu
-        Menu {
-            ForEach(engine.configuration.speeds) { speed in
-                Button {
-                    engine.setSpeed(speed)
-                    onInteraction()
-                } label: {
-                    HStack {
-                        Text(speed.localizedName)
-                        if abs(speed.rate - currentRate) < 0.01 {
-                            Image(systemName: "checkmark")
+        if !isLive {
+            // Playback Speed submenu
+            Menu {
+                ForEach(engine.configuration.speeds) { speed in
+                    Button {
+                        engine.setSpeed(speed)
+                        onInteraction()
+                    } label: {
+                        HStack {
+                            Text(speed.localizedName)
+                            if abs(speed.rate - currentRate) < 0.01 {
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
+            } label: {
+                Label(localization.playbackSpeed, systemImage: "gauge.with.dots.needle.33percent")
             }
-        } label: {
-            Label(localization.playbackSpeed, systemImage: "gauge.with.dots.needle.33percent")
+            // Cancel auto-hide when menu content appears (i.e. menu opened).
+            .onAppear { onMenuOpen() }
         }
-        // Cancel auto-hide when menu content appears (i.e. menu opened).
-        .onAppear { onMenuOpen() }
 
         // Audio track
         if !engine.trackState.audioTracks.isEmpty {

@@ -18,6 +18,9 @@ public struct PlayerState: Sendable {
     /// Whether the current item has finished playing.
     public var didFinishPlaying: Bool = false
 
+    /// Whether the current content is a live stream (duration is indefinite).
+    public var isLive: Bool = false
+
     /// Whether audio is muted.
     public var isMuted: Bool = false
 

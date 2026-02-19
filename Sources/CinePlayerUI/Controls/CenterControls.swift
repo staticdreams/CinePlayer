@@ -2,8 +2,10 @@ import CinePlayerCore
 import SwiftUI
 
 /// Center playback controls matching Apple's native player: glass circles with size hierarchy.
+/// For live streams, skip buttons are hidden and only play/pause is shown.
 struct CenterControls: View {
     let isPlaying: Bool
+    let isLive: Bool
     let onSkipBackward: () -> Void
     let onTogglePlayPause: () -> Void
     let onSkipForward: () -> Void
@@ -13,13 +15,15 @@ struct CenterControls: View {
 
     var body: some View {
         HStack(spacing: 48) {
-            // Skip backward
-            Button(action: onSkipBackward) {
-                Image(systemName: "gobackward.10")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
+            if !isLive {
+                // Skip backward
+                Button(action: onSkipBackward) {
+                    Image(systemName: "gobackward.10")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .circleGlass(size: skipSize)
             }
-            .circleGlass(size: skipSize)
 
             // Play / Pause — larger
             Button(action: onTogglePlayPause) {
@@ -30,13 +34,15 @@ struct CenterControls: View {
             }
             .circleGlass(size: playPauseSize)
 
-            // Skip forward
-            Button(action: onSkipForward) {
-                Image(systemName: "goforward.10")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.white)
+            if !isLive {
+                // Skip forward
+                Button(action: onSkipForward) {
+                    Image(systemName: "goforward.10")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                .circleGlass(size: skipSize)
             }
-            .circleGlass(size: skipSize)
         }
     }
 }
