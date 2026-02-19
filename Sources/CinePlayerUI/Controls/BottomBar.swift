@@ -2,7 +2,7 @@ import CinePlayerCore
 import SwiftUI
 
 /// Bottom bar: portrait shows title + "..." menu + progress pill;
-/// landscape shows everything in one large glass pill with inline option buttons (Apple-style).
+/// landscape shows inline audio/speed/subtitles pill + progress pill.
 struct BottomBar: View {
     let engine: PlayerEngine
     let title: String
@@ -55,57 +55,56 @@ struct BottomBar: View {
         .padding(.bottom, 12)
     }
 
-    // MARK: - Landscape Layout (single glass pill)
+    // MARK: - Landscape Layout
 
     private var landscapeLayout: some View {
-        VStack(spacing: 6) {
-            // Title row + inline option buttons
-            HStack {
+        VStack(spacing: 8) {
+            // Title row + options pill
+            HStack(alignment: .bottom) {
                 Text(title)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 12)
 
-                HStack(spacing: 12) {
+                // Options pill — audio, speed, subtitles (all inline)
+                HStack(spacing: 0) {
                     if !engine.trackState.audioTracks.isEmpty {
                         Button(action: onAudioTrackTap) {
                             Image(systemName: "waveform")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                         }
                     }
+
+                    // Inline speed menu
+                    speedMenu
 
                     if !engine.trackState.subtitleTracks.isEmpty {
                         Button(action: onSubtitleTrackTap) {
                             Image(systemName: "captions.bubble")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                         }
                     }
-
-                    landscapeMenu
                 }
+                .pillGlass()
             }
             .padding(.horizontal, 16)
-            .padding(.top, 4)
 
-            // Embedded progress bar (no own glass pill)
+            // Progress bar (own glass pill)
             ProgressBar(
                 currentTime: engine.state.currentTime,
                 duration: engine.state.duration,
                 onSeek: { time in engine.seek(to: time) },
-                onDragChanged: onInteraction,
-                embedded: true
+                onDragChanged: onInteraction
             )
+            .padding(.horizontal, 12)
         }
-        .padding(.vertical, 8)
-        .roundedGlass(cornerRadius: 16)
-        .padding(.horizontal, 12)
         .padding(.bottom, 12)
     }
 
@@ -124,20 +123,34 @@ struct BottomBar: View {
         }
     }
 
-    /// Landscape: "..." as a plain icon (already inside the glass pill).
+    /// Inline speed picker for landscape pill and portrait menu.
     @ViewBuilder
-    private var landscapeMenu: some View {
+    private var speedMenu: some View {
         Menu {
-            menuContent
+            ForEach(engine.configuration.speeds) { speed in
+                Button {
+                    engine.setSpeed(speed)
+                    onInteraction()
+                } label: {
+                    HStack {
+                        Text(speed.localizedName)
+                        if abs(speed.rate - currentRate) < 0.01 {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
         } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: 15, weight: .bold))
+            Text(speedLabel)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
+                .frame(height: 44)
+                .padding(.horizontal, 12)
         }
+        .onAppear { onMenuOpen() }
     }
 
-    /// Shared menu content: speed submenu, audio, subtitles.
+    /// Portrait-only menu content: speed submenu, audio, subtitles.
     @ViewBuilder
     private var menuContent: some View {
         // Playback Speed submenu
@@ -178,5 +191,12 @@ struct BottomBar: View {
 
     private var currentRate: Float {
         engine.state.rate > 0 ? engine.state.rate : 1.0
+    }
+
+    private var speedLabel: String {
+        let rate = currentRate
+        if abs(rate - 1.0) < 0.01 { return "1x" }
+        if rate == Float(Int(rate)) { return "\(Int(rate))x" }
+        return String(format: "%.1fx", rate)
     }
 }
