@@ -23,7 +23,8 @@ CinePlayer is a Swift Package that delivers a full-featured video player built e
 
 - **Glass-morphism controls** — `ultraThinMaterial` backgrounds with iOS 26 `glassEffect` support, smooth fade animations
 - **Adaptive layout** — Portrait shows a compact menu; landscape shows all controls inline in a pill
-- **Playback controls** — Play/pause, skip forward/back (10s), seekable progress bar with drag interaction
+- **Live streams** — Auto-detected; replaces progress bar with red LIVE indicator and "Go Live" button, hides speed/skip controls
+- **Playback controls** — Play/pause, configurable skip forward/back (5/10/15/30/45s), seekable progress bar with drag interaction
 - **Playback speed** — 0.5x to 2x in 0.25x increments, inline speed picker
 - **Audio track picker** — Protocol-based with rich display names (e.g. "Russian -- Dubbing (LostFilm) AAC 2ch")
 - **Subtitle picker** — Protocol-based with on/off toggle; auto-discovers subtitles from media when none provided
@@ -32,7 +33,7 @@ CinePlayer is a Swift Package that delivers a full-featured video player built e
 - **Picture-in-Picture** — Built into the player view, also available as standalone `PiPManager`
 - **AirPlay** — Native `AVRoutePickerView` integrated in the top bar
 - **Volume control** — Expandable volume slider with mute toggle in the top bar
-- **Now Playing** — Lock screen / Control Center integration via `NowPlayingManager`
+- **Now Playing** — Lock screen / Control Center integration via `.nowPlaying()` modifier with async artwork loading
 - **Auto-hide controls** — 4-second timeout, tap to show/hide, timer resets on interaction
 - **Double-tap zoom** — Toggle between aspect fit and aspect fill
 - **Stats overlay** — Toggleable via button; shows resolution, codecs, FPS, bitrate, buffer, stalls, active tracks
@@ -59,7 +60,7 @@ CinePlayer (umbrella)
 | Module                 | Dependencies                  | Description                                                       |
 | ---------------------- | ----------------------------- | ----------------------------------------------------------------- |
 | `CinePlayerCore`       | --                            | Player engine, state management, track protocols, HLS interceptor |
-| `CinePlayerUI`         | `CinePlayerCore`, `CinePlayerPiP` | Full player view with controls, pickers, gestures, stats     |
+| `CinePlayerUI`         | `CinePlayerCore`, `CinePlayerPiP`, `CinePlayerNowPlaying` | Full player view with controls, pickers, gestures, stats |
 | `CinePlayerPiP`        | `CinePlayerCore`              | `AVPictureInPictureController` lifecycle                          |
 | `CinePlayerAirPlay`    | --                            | SwiftUI wrapper for `AVRoutePickerView`                           |
 | `CinePlayerNowPlaying` | `CinePlayerCore`              | `MPNowPlayingInfoCenter` + remote commands                        |
@@ -183,6 +184,7 @@ let config = PlayerConfiguration(
     autoPlay: true,                     // Start playing immediately (default)
     loop: false,                        // Don't loop (default)
     speeds: PlaybackSpeed.standard,     // 0.5x - 2x in 0.25x increments
+    skipInterval: 10,                   // Skip forward/back duration (default)
     gravity: .resizeAspect              // Letterbox (default)
 )
 
@@ -253,33 +255,49 @@ The interceptor uses a custom URL scheme (`cineplayer-hls://`) with `AVAssetReso
 
 ### Now Playing (Lock Screen / Control Center)
 
-Integrate with the system media controls:
+Enable lock screen and Control Center controls with a single modifier:
+
+```swift
+CinePlayerView(url: videoURL)
+    .nowPlaying(title: "Episode Title", artist: "Show Name", artwork: posterImage)
+```
+
+Artwork can also be loaded asynchronously from a URL:
+
+```swift
+CinePlayerView(url: videoURL)
+    .nowPlaying(title: "Episode Title", artist: "Show Name", artworkURL: posterURL)
+```
+
+This automatically registers remote commands (play, pause, skip forward/backward, seek) and keeps the lock screen info updated during playback. Cleanup happens automatically when the player is dismissed.
+
+For standalone usage without `CinePlayerView`, use `NowPlayingManager` directly:
 
 ```swift
 import CinePlayerNowPlaying
 
 let nowPlaying = NowPlayingManager()
-
-// Configure with player engine and metadata
-nowPlaying.configure(
-    engine: playerEngine,
-    title: "Episode Title",
-    artist: "Show Name",
-    artwork: posterImage
-)
-
-// Update periodically (e.g. in onProgressUpdate callback)
-nowPlaying.updateNowPlayingInfo(
-    title: "Episode Title",
-    artist: "Show Name",
-    engine: playerEngine
-)
-
-// Clean up when done
+nowPlaying.configure(engine: playerEngine, title: "Episode Title", artist: "Show Name", artwork: posterImage)
+nowPlaying.updatePlaybackPosition(engine: playerEngine) // Lightweight position update
 nowPlaying.tearDown()
 ```
 
-This registers remote commands: play, pause, skip forward/backward (10s), and seek to position.
+### Live Streams
+
+CinePlayer automatically detects live streams (indefinite duration) and adapts the UI:
+
+- Progress bar is replaced with a red **LIVE** indicator and a **Go Live** button
+- Speed picker and skip buttons are hidden
+- "Go Live" seeks to the live edge and resumes playback
+
+No configuration is needed -- just pass a live HLS URL:
+
+```swift
+CinePlayerView(url: liveStreamURL)
+    .title("Live Event")
+```
+
+Check live status programmatically via `engine.state.isLive`.
 
 ### Localization
 
@@ -341,6 +359,7 @@ engine.togglePlayPause()
 engine.seek(to: 90.0)
 engine.skipForward(15)
 engine.skipBackward(15)
+engine.seekToLiveEdge()  // Jump to live edge for live streams
 engine.setSpeed(PlaybackSpeed(rate: 1.5, localizedName: "1.5x"))
 engine.toggleZoom()
 engine.toggleMute()
@@ -352,6 +371,7 @@ engine.state.progress        // Double (0...1)
 engine.state.remainingTime   // TimeInterval
 engine.state.isPlaying       // Bool
 engine.state.isBuffering     // Bool
+engine.state.isLive          // Bool (true for live streams)
 engine.state.isMuted         // Bool
 engine.state.rate            // Float
 engine.state.status          // .unknown | .readyToPlay | .failed
@@ -420,6 +440,23 @@ The built-in `CinePlayerView` provides an adaptive control overlay:
 
 The `...` button opens a menu with: Playback Speed, Audio, Subtitles, Stats.
 
+### Portrait (Live Stream)
+
+```
++-------------------------------------------+
+| [X] [PiP|AirPlay]           [Volume/Mute] |
+|                                            |
+|                   [>]                      |  <- Play/pause only
+|                                            |
+|  Live Event                       [...]   |
+|  +--------------------------------------+  |
+|  | * LIVE                    [Go Live]  |  |  <- Live bar
+|  +--------------------------------------+  |
++-------------------------------------------+
+```
+
+For live streams, skip buttons and speed controls are hidden. The progress bar is replaced with a LIVE indicator and a "Go Live" button.
+
 ### Landscape
 
 ```
@@ -445,7 +482,7 @@ All controls are inline in landscape -- audio, speed, subtitles, and stats are i
 | Tap anywhere         | Show/hide controls                  |
 | Double-tap           | Toggle zoom (aspect fit/fill)       |
 | Drag progress bar    | Seek to position                    |
-| Skip buttons         | Jump forward/back 10 seconds        |
+| Skip buttons         | Jump forward/back (configurable, default 10s) |
 | Speed picker         | Select 0.5x - 2x playback rate     |
 | Audio button         | Open audio track picker sheet       |
 | Subtitles button     | Open subtitle picker sheet          |
@@ -465,7 +502,9 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `.audioTracks(_:)` | `[any PlayerAudioTrack]` | Audio tracks with rich display names |
 | `.subtitleTracks(_:)` | `[any PlayerSubtitleTrack]` | Subtitle tracks (auto-discovered if omitted) |
 | `.hlsAudioTracks(_:)` | `[HLSAudioTrackInfo]` | HLS manifest rewriting metadata |
+| `.nowPlaying(title:artist:artwork:artworkURL:)` | `String, String?, UIImage?, URL?` | Lock screen / Control Center integration |
 | `.startTime(_:)` | `TimeInterval` | Resume position in seconds |
+| `.skipInterval(_:)` | `TimeInterval` | Skip forward/back duration (default 10s) |
 | `.videoGravity(_:)` | `VideoGravity` | Aspect fit, fill, or stretch |
 | `.loop(_:)` | `Bool` | Loop video at end |
 | `.language(_:)` | `String` | Set UI language by code (e.g. `"en"`, `"ru"`) |
@@ -491,6 +530,7 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `autoPlay`  | `Bool`            | `true`                   | Start playback when ready  |
 | `loop`      | `Bool`            | `false`                  | Loop video at end          |
 | `speeds`    | `[PlaybackSpeed]` | `PlaybackSpeed.standard` | Available speed options    |
+| `skipInterval` | `TimeInterval` | `10`                    | Skip forward/back seconds  |
 | `gravity`   | `VideoGravity`    | `.resizeAspect`          | Video display mode         |
 | `localization` | `PlayerLocalization` | `.english`            | UI strings localization    |
 
@@ -504,6 +544,7 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `remainingTime`    | `TimeInterval` | Time remaining                          |
 | `isPlaying`        | `Bool`         | Currently playing                       |
 | `isBuffering`      | `Bool`         | Currently buffering                     |
+| `isLive`           | `Bool`         | Content is a live stream                |
 | `isMuted`          | `Bool`         | Audio is muted                          |
 | `didFinishPlaying` | `Bool`         | Reached the end                         |
 | `rate`             | `Float`        | Current playback rate                   |
@@ -534,7 +575,7 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 
 ### PlayerLocalization
 
-A `Sendable` struct holding all 27 user-facing strings in CinePlayer. Built-in presets:
+A `Sendable` struct holding all 29 user-facing strings in CinePlayer. Built-in presets:
 
 | Static Property | Language |
 | --------------- | -------- |
