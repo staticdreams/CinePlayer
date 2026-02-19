@@ -52,8 +52,9 @@ struct ControlsOverlay: View {
                     CenterControls(
                         isPlaying: engine.state.isPlaying,
                         isLive: engine.state.isLive,
+                        skipInterval: engine.configuration.skipInterval,
                         onSkipBackward: {
-                            engine.skipBackward()
+                            engine.skipBackward(engine.configuration.skipInterval)
                             controlsVisibility.resetTimer()
                         },
                         onTogglePlayPause: {
@@ -61,7 +62,7 @@ struct ControlsOverlay: View {
                             controlsVisibility.resetTimer()
                         },
                         onSkipForward: {
-                            engine.skipForward()
+                            engine.skipForward(engine.configuration.skipInterval)
                             controlsVisibility.resetTimer()
                         }
                     )

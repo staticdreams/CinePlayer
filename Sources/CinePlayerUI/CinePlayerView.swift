@@ -260,6 +260,14 @@ extension CinePlayerView {
         return view
     }
 
+    /// Sets the skip forward/backward interval in seconds (default 10).
+    /// SF Symbols exist for 5, 10, 15, 30, 45.
+    public func skipInterval(_ seconds: TimeInterval) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.skipInterval = seconds
+        return view
+    }
+
     /// Enables or disables loop mode.
     public func loop(_ enabled: Bool) -> CinePlayerView {
         var view = self

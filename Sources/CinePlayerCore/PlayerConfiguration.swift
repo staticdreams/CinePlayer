@@ -14,6 +14,9 @@ public struct PlayerConfiguration: Sendable {
     /// Available playback speed options.
     public var speeds: [PlaybackSpeed] = PlaybackSpeed.standard
 
+    /// Skip forward/backward interval in seconds.
+    public var skipInterval: TimeInterval = 10
+
     /// Video display gravity.
     public var gravity: VideoGravity = .resizeAspect
 
@@ -25,6 +28,7 @@ public struct PlayerConfiguration: Sendable {
         autoPlay: Bool = true,
         loop: Bool = false,
         speeds: [PlaybackSpeed] = PlaybackSpeed.standard,
+        skipInterval: TimeInterval = 10,
         gravity: VideoGravity = .resizeAspect,
         localization: PlayerLocalization = .english
     ) {
@@ -32,6 +36,7 @@ public struct PlayerConfiguration: Sendable {
         self.autoPlay = autoPlay
         self.loop = loop
         self.speeds = speeds
+        self.skipInterval = skipInterval
         self.gravity = gravity
         self.localization = localization
     }

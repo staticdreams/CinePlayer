@@ -6,6 +6,7 @@ import SwiftUI
 struct CenterControls: View {
     let isPlaying: Bool
     let isLive: Bool
+    let skipInterval: TimeInterval
     let onSkipBackward: () -> Void
     let onTogglePlayPause: () -> Void
     let onSkipForward: () -> Void
@@ -13,12 +14,21 @@ struct CenterControls: View {
     private let playPauseSize: CGFloat = 76
     private let skipSize: CGFloat = 56
 
+    /// SF Symbol name for the skip interval (e.g. "gobackward.10", "gobackward.15").
+    private var backwardSymbol: String {
+        "gobackward.\(Int(skipInterval))"
+    }
+
+    private var forwardSymbol: String {
+        "goforward.\(Int(skipInterval))"
+    }
+
     var body: some View {
         HStack(spacing: 48) {
             if !isLive {
                 // Skip backward
                 Button(action: onSkipBackward) {
-                    Image(systemName: "gobackward.10")
+                    Image(systemName: backwardSymbol)
                         .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(.white)
                 }
@@ -37,7 +47,7 @@ struct CenterControls: View {
             if !isLive {
                 // Skip forward
                 Button(action: onSkipForward) {
-                    Image(systemName: "goforward.10")
+                    Image(systemName: forwardSymbol)
                         .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(.white)
                 }
