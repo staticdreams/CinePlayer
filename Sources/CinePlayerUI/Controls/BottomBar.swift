@@ -140,6 +140,8 @@ struct BottomBar: View {
                     }
                 }
             }
+            // Cancel auto-hide when dropdown actually opens (content is instantiated).
+            .onAppear { onMenuOpen() }
         } label: {
             Text(speedLabel)
                 .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -147,7 +149,6 @@ struct BottomBar: View {
                 .frame(height: 44)
                 .padding(.horizontal, 12)
         }
-        .onAppear { onMenuOpen() }
     }
 
     /// Portrait-only menu content: speed submenu, audio, subtitles.

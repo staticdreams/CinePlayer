@@ -35,7 +35,9 @@ public final class TrackState {
     }
 
     /// Currently selected subtitle track index.
-    public var selectedSubtitleIndex: Int?
+    public var selectedSubtitleIndex: Int? {
+        didSet { applySubtitleSelection() }
+    }
 
     /// Whether subtitles are turned off.
     public var subtitlesOff: Bool = true
@@ -73,6 +75,21 @@ public final class TrackState {
             if mediaCharacteristics.contains(.legible),
                let group = try await asset.loadMediaSelectionGroup(for: .legible) {
                 discoveredSubtitleOptions = Array(group.options)
+
+                // When no explicit subtitle tracks are provided, auto-generate
+                // from discovered AV options (replicates AVPlayerViewController's
+                // default behavior of showing all available subtitles).
+                if subtitleTracks.isEmpty && !discoveredSubtitleOptions.isEmpty {
+                    subtitleTracks = discoveredSubtitleOptions.enumerated().map { index, option in
+                        DiscoveredSubtitleTrack(
+                            id: "\(index)",
+                            language: option.extendedLanguageTag
+                                ?? option.locale?.language.languageCode?.identifier,
+                            displayName: option.displayName,
+                            isForced: option.hasMediaCharacteristic(.containsOnlyForcedSubtitles)
+                        )
+                    }
+                }
             }
         } catch {
             // Track discovery failure is non-fatal.
@@ -152,4 +169,15 @@ public final class TrackState {
             item.select(nil, in: group)
         }
     }
+}
+
+// MARK: - Auto-generated subtitle track from AVMediaSelectionOption
+
+/// Lightweight wrapper around a discovered AVMediaSelectionOption,
+/// used when the host app doesn't supply explicit subtitle tracks.
+private struct DiscoveredSubtitleTrack: PlayerSubtitleTrack {
+    let id: String
+    let language: String?
+    let displayName: String
+    let isForced: Bool
 }
