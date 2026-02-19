@@ -29,6 +29,8 @@ public struct CinePlayerView: View {
     private var nowPlayingMetadata: NowPlayingMetadata?
     private var onProgressUpdateCallback: ((TimeInterval, TimeInterval) -> Void)?
     private var onPlaybackEndCallback: (() -> Void)?
+    private var onPlayNextCallback: (() -> Void)?
+    private var onDismissNextCallback: (() -> Void)?
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -86,6 +88,18 @@ public struct CinePlayerView: View {
                 }
                 .allowsHitTesting(false)
             }
+
+            // Up Next overlay (bottom-right, above progress bar)
+            if engine.isUpNextVisible, let upNextItem = engine.upNextItem {
+                UpNextOverlay(
+                    item: upNextItem,
+                    countdown: engine.upNextCountdown,
+                    localization: engine.configuration.localization,
+                    onTap: { engine.triggerPlayNext() },
+                    onDismiss: { engine.dismissUpNext() }
+                )
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: engine.isUpNextVisible)
+            }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
@@ -102,6 +116,12 @@ public struct CinePlayerView: View {
             }
             engine.onPlaybackEnd = { [onPlaybackEndCallback] in
                 onPlaybackEndCallback?()
+            }
+            engine.onPlayNext = { [onPlayNextCallback] in
+                onPlayNextCallback?()
+            }
+            engine.onDismissNext = { [onDismissNextCallback] in
+                onDismissNextCallback?()
             }
 
             setAudioSession()
@@ -309,6 +329,27 @@ extension CinePlayerView {
     public func localization(_ localization: PlayerLocalization) -> CinePlayerView {
         var view = self
         view.engine.configuration.localization = localization
+        return view
+    }
+
+    /// Sets the up-next item for the "Coming Up Next" banner overlay.
+    public func upNext(_ item: UpNextItem?) -> CinePlayerView {
+        var view = self
+        view.engine.upNextItem = item
+        return view
+    }
+
+    /// Sets the callback for when the next item should start playing.
+    public func onPlayNext(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onPlayNextCallback = callback
+        return view
+    }
+
+    /// Sets the callback for when the user dismisses the up-next banner.
+    public func onDismissNext(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onDismissNextCallback = callback
         return view
     }
 }

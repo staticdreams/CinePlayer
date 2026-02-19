@@ -9,6 +9,7 @@ extension PlayerLocalization {
         goLive: "В эфир",
         done: "Готово",
         off: "Выкл",
+        upNext: "Далее",
         statsVideo: "ВИДЕО",
         statsAudioSubs: "АУДИО / СУБТИТРЫ",
         statsNetwork: "СЕТЬ",

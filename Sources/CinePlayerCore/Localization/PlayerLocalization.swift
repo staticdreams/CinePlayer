@@ -30,6 +30,10 @@ public struct PlayerLocalization: Sendable {
     public var statsAudioSubs: String
     public var statsNetwork: String
 
+    // MARK: - Up Next
+
+    public var upNext: String
+
     // MARK: - Stats Labels
 
     public var statsResolution: String
@@ -60,6 +64,7 @@ public struct PlayerLocalization: Sendable {
         goLive: String,
         done: String,
         off: String,
+        upNext: String = "Up Next",
         statsVideo: String,
         statsAudioSubs: String,
         statsNetwork: String,
@@ -90,6 +95,7 @@ public struct PlayerLocalization: Sendable {
         self.goLive = goLive
         self.done = done
         self.off = off
+        self.upNext = upNext
         self.statsVideo = statsVideo
         self.statsAudioSubs = statsAudioSubs
         self.statsNetwork = statsNetwork

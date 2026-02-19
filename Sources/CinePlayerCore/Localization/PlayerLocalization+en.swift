@@ -9,6 +9,7 @@ extension PlayerLocalization {
         goLive: "Go Live",
         done: "Done",
         off: "Off",
+        upNext: "Up Next",
         statsVideo: "VIDEO",
         statsAudioSubs: "AUDIO / SUBS",
         statsNetwork: "NETWORK",

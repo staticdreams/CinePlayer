@@ -28,6 +28,39 @@ public final class PlayerEngine {
     /// Whether the stats overlay should collect data.
     public var isCollectingStats: Bool = false
 
+    // MARK: - Up Next
+
+    /// Set by the host app to show the "Coming Up Next" banner.
+    public var upNextItem: UpNextItem?
+
+    /// Whether the user has dismissed the up-next banner for the current item.
+    public private(set) var upNextDismissed: Bool = false
+
+    /// Called when the next item should start playing (tap or countdown expiry).
+    public var onPlayNext: (() -> Void)?
+
+    /// Called when the user explicitly dismisses the up-next banner.
+    public var onDismissNext: (() -> Void)?
+
+    /// Whether the up-next banner should be visible right now.
+    public var isUpNextVisible: Bool {
+        guard let item = upNextItem,
+              !upNextDismissed,
+              !state.isLive,
+              !configuration.loop,
+              state.duration > item.countdownDuration,
+              state.remainingTime <= item.countdownDuration,
+              state.remainingTime > 0
+        else { return false }
+        return true
+    }
+
+    /// Countdown seconds remaining, clamped to [0, countdownDuration].
+    public var upNextCountdown: TimeInterval {
+        guard let item = upNextItem else { return 0 }
+        return min(max(state.remainingTime, 0), item.countdownDuration)
+    }
+
     // MARK: - Internal
 
     /// The underlying AVPlayer (exposed for VideoSurfaceView).
@@ -128,6 +161,7 @@ public final class PlayerEngine {
         url = newURL
         hasPerformedInitialSeek = false
         state = PlayerState()
+        upNextDismissed = false
 
         if isActivated {
             let item = AVPlayerItem(url: newURL)
@@ -140,6 +174,7 @@ public final class PlayerEngine {
     public func replaceWithItem(_ item: AVPlayerItem) {
         hasPerformedInitialSeek = false
         state = PlayerState()
+        upNextDismissed = false
         player.replaceCurrentItem(with: item)
     }
 
@@ -212,6 +247,19 @@ public final class PlayerEngine {
     public func toggleMute() {
         player.isMuted.toggle()
         state.isMuted = player.isMuted
+    }
+
+    // MARK: - Up Next actions
+
+    /// Dismiss the up-next banner for the current item.
+    public func dismissUpNext() {
+        upNextDismissed = true
+        onDismissNext?()
+    }
+
+    /// Trigger playback of the next item (user tapped the banner).
+    public func triggerPlayNext() {
+        onPlayNext?()
     }
 
     // MARK: - Track selection (convenience)
@@ -327,6 +375,9 @@ public final class PlayerEngine {
             if self.configuration.loop {
                 self.player.seek(to: .zero)
                 self.player.play()
+            } else if self.upNextItem != nil && !self.upNextDismissed {
+                self.state.isPlaying = false
+                self.onPlayNext?()
             } else {
                 self.state.isPlaying = false
                 self.onPlaybackEnd?()
