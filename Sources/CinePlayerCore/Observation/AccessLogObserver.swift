@@ -13,6 +13,10 @@ final class AccessLogObserver {
     private var cachedVideoFPS: String?
 
     /// Collects current stats from the player item.
+    ///
+    /// Synchronous stats (rate, resolution, buffer, codecs) are always populated.
+    /// Async stats (audio/subtitle track names) are fetched non-blocking and cached
+    /// to avoid hanging when a custom resource loader (HLS interceptor) is active.
     func collectStats(from item: AVPlayerItem, player: AVPlayer) async -> PlayerStats {
         var stats = PlayerStats()
 
@@ -37,25 +41,13 @@ final class AccessLogObserver {
             stats.bufferedDuration = String(format: "%.2f s", buffered)
         }
 
-        // Playback rate.
+        // Playback rate (always available).
         stats.playbackRate = String(format: "%.2fx", player.rate)
 
         // Resolution from presentationSize.
         let size = item.presentationSize
         if size.width > 0 && size.height > 0 {
             stats.resolution = "\(Int(size.width))\u{00D7}\(Int(size.height))"
-        }
-
-        // Current audio/subtitle selection.
-        if let group = try? await item.asset.loadMediaSelectionGroup(for: .audible),
-           let selected = item.currentMediaSelection.selectedMediaOption(in: group) {
-            stats.audioTrack = selected.displayName
-        }
-        if let group = try? await item.asset.loadMediaSelectionGroup(for: .legible),
-           let selected = item.currentMediaSelection.selectedMediaOption(in: group) {
-            stats.subtitleTrack = selected.displayName
-        } else {
-            stats.subtitleTrack = "Off"
         }
 
         // Apply cached codec/FPS if already discovered.
@@ -71,7 +63,73 @@ final class AccessLogObserver {
             updateCodecInfo(from: item, stats: &stats)
         }
 
+        // Audio/subtitle track names — use cached values or try async load with timeout.
+        // The async loadMediaSelectionGroup can hang when a custom AVAssetResourceLoader
+        // is active (HLS interceptor), so we cache results and never block on them.
+        if let cached = cachedAudioTrack {
+            stats.audioTrack = cached
+        }
+        if let cached = cachedSubtitleTrack {
+            stats.subtitleTrack = cached
+        }
+
+        if cachedAudioTrack == nil || cachedSubtitleTrack == nil {
+            // Fire-and-forget: try to load track names without blocking stats return.
+            let asset = item.asset
+            let mediaSelection = item.currentMediaSelection
+            Task { [weak self] in
+                guard let self else { return }
+                await self.loadTrackNames(asset: asset, mediaSelection: mediaSelection)
+            }
+        }
+
         return stats
+    }
+
+    // Cached audio/subtitle track names to avoid repeated async calls.
+    private var cachedAudioTrack: String?
+    private var cachedSubtitleTrack: String?
+
+    /// Non-blocking load of audio/subtitle track display names with a timeout.
+    private func loadTrackNames(asset: AVAsset, mediaSelection: AVMediaSelection) async {
+        // Use a timeout to prevent hanging on custom resource loader assets.
+        let result = await withTaskGroup(of: (String?, String?).self) { group in
+            group.addTask {
+                var audio: String?
+                var subtitle: String?
+                if let group = try? await asset.loadMediaSelectionGroup(for: .audible),
+                   let selected = mediaSelection.selectedMediaOption(in: group) {
+                    audio = selected.displayName
+                }
+                if let group = try? await asset.loadMediaSelectionGroup(for: .legible),
+                   let selected = mediaSelection.selectedMediaOption(in: group) {
+                    subtitle = selected.displayName
+                } else {
+                    subtitle = "Off"
+                }
+                return (audio, subtitle)
+            }
+
+            // Timeout task
+            group.addTask {
+                try? await Task.sleep(for: .seconds(2))
+                return (nil, nil)
+            }
+
+            // Take whichever finishes first
+            if let first = await group.next() {
+                group.cancelAll()
+                return first
+            }
+            return (nil, nil)
+        }
+
+        if let audio = result.0 {
+            cachedAudioTrack = audio
+        }
+        if let subtitle = result.1 {
+            cachedSubtitleTrack = subtitle
+        }
     }
 
     /// Discovers codec and FPS from the player item's tracks.

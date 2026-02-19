@@ -250,6 +250,41 @@ struct BottomBar: View {
         }
     }
 
+    // MARK: - Live Bar
+
+    /// Replaces the progress bar for live streams: red "LIVE" indicator + "Go Live" button.
+    private var liveBar: some View {
+        HStack(spacing: 12) {
+            // Red LIVE indicator
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(.red)
+                    .frame(width: 8, height: 8)
+                Text(localization.liveIndicator)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+
+            Spacer()
+
+            // "Go Live" button — seeks to live edge
+            Button {
+                engine.seekToLiveEdge()
+                onInteraction()
+            } label: {
+                Text(localization.goLive)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+            }
+            .pillGlass()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .pillGlass()
+    }
+
     private var currentRate: Float {
         engine.state.rate > 0 ? engine.state.rate : 1.0
     }
