@@ -94,6 +94,10 @@ struct BottomBar: View {
                         }
                     }
 
+                    if engine.configuration.subtitleFontSizeEnabled && !engine.trackState.subtitlesOff {
+                        subtitleSizeMenu
+                    }
+
                     Button(action: onStatsTap) {
                         Image(systemName: "chart.bar.xaxis")
                             .font(.system(size: 15, weight: .semibold))
@@ -194,6 +198,33 @@ struct BottomBar: View {
         }
     }
 
+    /// Inline subtitle font size picker for landscape pill.
+    @ViewBuilder
+    private var subtitleSizeMenu: some View {
+        Menu {
+            ForEach(engine.configuration.subtitleFontSizes) { size in
+                Button {
+                    engine.subtitleFontSize = size
+                    onInteraction()
+                } label: {
+                    HStack {
+                        Text(size.localizedName)
+                        if size == engine.subtitleFontSize {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+            .onAppear { onMenuOpen() }
+        } label: {
+            Text(subtitleSizeLabel)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(height: 44)
+                .padding(.horizontal, 12)
+        }
+    }
+
     /// Portrait-only menu content: speed submenu (hidden for live), audio, subtitles.
     @ViewBuilder
     private var menuContent: some View {
@@ -231,6 +262,27 @@ struct BottomBar: View {
         if !engine.trackState.subtitleTracks.isEmpty {
             Button(action: onSubtitleTrackTap) {
                 Label(localization.subtitles, systemImage: "captions.bubble")
+            }
+        }
+
+        // Subtitle font size submenu
+        if engine.configuration.subtitleFontSizeEnabled && !engine.trackState.subtitlesOff {
+            Menu {
+                ForEach(engine.configuration.subtitleFontSizes) { size in
+                    Button {
+                        engine.subtitleFontSize = size
+                        onInteraction()
+                    } label: {
+                        HStack {
+                            Text(size.localizedName)
+                            if size == engine.subtitleFontSize {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Label(localization.subtitleSize, systemImage: "textformat.size")
             }
         }
 
@@ -282,6 +334,10 @@ struct BottomBar: View {
 
     private var currentRate: Float {
         engine.state.rate > 0 ? engine.state.rate : 1.0
+    }
+
+    private var subtitleSizeLabel: String {
+        "\(engine.subtitleFontSize.percentage)%"
     }
 
     private var speedLabel: String {

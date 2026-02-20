@@ -19,6 +19,10 @@ public struct PlayerLocalization: Sendable {
     public var liveIndicator: String
     public var goLive: String
 
+    // MARK: - Subtitle Size
+
+    public var subtitleSize: String
+
     // MARK: - Pickers
 
     public var done: String
@@ -58,6 +62,7 @@ public struct PlayerLocalization: Sendable {
         playbackSpeed: String,
         audio: String,
         subtitles: String,
+        subtitleSize: String = "Subtitle Size",
         playbackStats: String,
         hideStats: String,
         liveIndicator: String,
@@ -89,6 +94,7 @@ public struct PlayerLocalization: Sendable {
         self.playbackSpeed = playbackSpeed
         self.audio = audio
         self.subtitles = subtitles
+        self.subtitleSize = subtitleSize
         self.playbackStats = playbackStats
         self.hideStats = hideStats
         self.liveIndicator = liveIndicator

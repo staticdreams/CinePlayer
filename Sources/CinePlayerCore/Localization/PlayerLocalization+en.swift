@@ -3,6 +3,7 @@ extension PlayerLocalization {
         playbackSpeed: "Playback Speed",
         audio: "Audio",
         subtitles: "Subtitles",
+        subtitleSize: "Subtitle Size",
         playbackStats: "Playback Stats",
         hideStats: "Hide Stats",
         liveIndicator: "LIVE",

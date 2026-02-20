@@ -348,6 +348,13 @@ extension CinePlayerView {
         return view
     }
 
+    /// Enables or disables the subtitle font size control.
+    public func subtitleFontSize(_ enabled: Bool) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.subtitleFontSizeEnabled = enabled
+        return view
+    }
+
     /// Sets the up-next item for the "Coming Up Next" banner overlay.
     public func upNext(_ item: UpNextItem?) -> CinePlayerView {
         var view = self

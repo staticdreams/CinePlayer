@@ -28,6 +28,11 @@ public final class PlayerEngine {
     /// Whether the stats overlay should collect data.
     public var isCollectingStats: Bool = false
 
+    /// Current subtitle font size (applied via AVTextStyleRule).
+    public var subtitleFontSize: SubtitleFontSize = .default {
+        didSet { applySubtitleFontSize() }
+    }
+
     // MARK: - Up Next
 
     /// Set by the host app to show the "Coming Up Next" banner.
@@ -360,6 +365,7 @@ public final class PlayerEngine {
             case .readyToPlay:
                 self.state.status = .readyToPlay
                 self.performInitialSeekIfNeeded()
+                self.applySubtitleFontSize()
 
                 // Discover tracks.
                 Task {
@@ -406,6 +412,20 @@ public final class PlayerEngine {
 
         observer.observe(item)
         self.itemObserver = observer
+    }
+
+    private func applySubtitleFontSize() {
+        guard let item = player.currentItem else { return }
+        if subtitleFontSize.percentage == 100 {
+            item.textStyleRules = nil
+        } else {
+            let attributes: [String: Any] = [
+                kCMTextMarkupAttribute_RelativeFontSize as String: subtitleFontSize.percentage
+            ]
+            if let rule = AVTextStyleRule(textMarkupAttributes: attributes) {
+                item.textStyleRules = [rule]
+            }
+        }
     }
 
     private func performInitialSeekIfNeeded() {

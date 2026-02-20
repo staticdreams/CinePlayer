@@ -23,6 +23,12 @@ public struct PlayerConfiguration: Sendable {
     /// Localized strings for the player UI.
     public var localization: PlayerLocalization = .english
 
+    /// Whether the subtitle font size control is shown.
+    public var subtitleFontSizeEnabled: Bool = false
+
+    /// Available subtitle font size options.
+    public var subtitleFontSizes: [SubtitleFontSize] = SubtitleFontSize.standard
+
     public init(
         startTime: TimeInterval = 0,
         autoPlay: Bool = true,
@@ -30,7 +36,9 @@ public struct PlayerConfiguration: Sendable {
         speeds: [PlaybackSpeed] = PlaybackSpeed.standard,
         skipInterval: TimeInterval = 10,
         gravity: VideoGravity = .resizeAspect,
-        localization: PlayerLocalization = .english
+        localization: PlayerLocalization = .english,
+        subtitleFontSizeEnabled: Bool = false,
+        subtitleFontSizes: [SubtitleFontSize] = SubtitleFontSize.standard
     ) {
         self.startTime = startTime
         self.autoPlay = autoPlay
@@ -39,5 +47,7 @@ public struct PlayerConfiguration: Sendable {
         self.skipInterval = skipInterval
         self.gravity = gravity
         self.localization = localization
+        self.subtitleFontSizeEnabled = subtitleFontSizeEnabled
+        self.subtitleFontSizes = subtitleFontSizes
     }
 }
