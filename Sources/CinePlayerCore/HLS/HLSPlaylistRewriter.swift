@@ -153,9 +153,6 @@ public enum HLSPlaylistRewriter {
         }()
         let matched = matchedByIndex ?? matchedByLangAndPosition
 
-        attrs.removeValue(forKey: "LANGUAGE")
-        attrs.removeValue(forKey: "ASSOC-LANGUAGE")
-
         if let matched {
             attrs["NAME"] = quoteAttributeValue(matched.displayName)
         }
