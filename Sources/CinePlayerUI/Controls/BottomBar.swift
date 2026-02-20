@@ -6,6 +6,7 @@ import SwiftUI
 /// For live streams, the progress bar is replaced with a LIVE indicator + "Go Live" button.
 struct BottomBar: View {
     let engine: PlayerEngine
+    let isLandscape: Bool
     let titleInfo: PlayerTitleInfo
     let localization: PlayerLocalization
     let showingStats: Bool
@@ -14,12 +15,6 @@ struct BottomBar: View {
     let onStatsTap: () -> Void
     let onInteraction: () -> Void
     let onMenuOpen: () -> Void
-
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-
-    private var isLandscape: Bool {
-        verticalSizeClass == .compact
-    }
 
     private var isLive: Bool {
         engine.state.isLive

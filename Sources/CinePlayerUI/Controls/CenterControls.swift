@@ -3,8 +3,10 @@ import SwiftUI
 
 /// Center playback controls matching Apple's native player: glass circles with size hierarchy.
 /// For live streams, skip buttons are hidden and only play/pause is shown.
+/// During initial loading, a spinner replaces the play/pause button.
 struct CenterControls: View {
   let isPlaying: Bool
+  let isLoading: Bool
   let isLive: Bool
   let skipInterval: TimeInterval
   let onSkipBackward: () -> Void
@@ -33,16 +35,25 @@ struct CenterControls: View {
             .foregroundStyle(.white)
         }
         .circleGlass(size: skipSize)
+        .opacity(isLoading ? 0 : 1)
       }
 
-      // Play / Pause — larger
-      Button(action: onTogglePlayPause) {
-        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-          .font(.system(size: 36, weight: .bold))
-          .foregroundStyle(.white)
-          .contentTransition(.symbolEffect(.replace))
+      // Loading spinner / Play / Pause — larger
+      if isLoading {
+        ProgressView()
+          .tint(.white)
+          .scaleEffect(1.5)
+          .frame(width: playPauseSize, height: playPauseSize)
+          .background(.ultraThinMaterial, in: Circle())
+      } else {
+        Button(action: onTogglePlayPause) {
+          Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            .font(.system(size: 36, weight: .bold))
+            .foregroundStyle(.white)
+            .contentTransition(.symbolEffect(.replace))
+        }
+        .circleGlass(size: playPauseSize)
       }
-      .circleGlass(size: playPauseSize)
 
       if !isLive {
         // Skip forward
@@ -52,6 +63,7 @@ struct CenterControls: View {
             .foregroundStyle(.white)
         }
         .circleGlass(size: skipSize)
+        .opacity(isLoading ? 0 : 1)
       }
     }
   }

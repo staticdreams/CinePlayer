@@ -6,6 +6,7 @@ import SwiftUI
 struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
+    let isLandscape: Bool
     let titleInfo: PlayerTitleInfo
     let localization: PlayerLocalization
     let showingStats: Bool
@@ -51,6 +52,7 @@ struct ControlsOverlay: View {
 
                     CenterControls(
                         isPlaying: engine.state.isPlaying,
+                        isLoading: engine.state.status == .unknown,
                         isLive: engine.state.isLive,
                         skipInterval: engine.configuration.skipInterval,
                         onSkipBackward: {
@@ -72,6 +74,7 @@ struct ControlsOverlay: View {
 
                     BottomBar(
                         engine: engine,
+                        isLandscape: isLandscape,
                         titleInfo: titleInfo,
                         localization: localization,
                         showingStats: showingStats,

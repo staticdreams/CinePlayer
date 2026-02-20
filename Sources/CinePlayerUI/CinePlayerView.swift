@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 import CinePlayerCore
 import CinePlayerNowPlaying
 import CinePlayerPiP
@@ -22,6 +23,7 @@ public struct CinePlayerView: View {
     @State private var showAudioPicker = false
     @State private var showSubtitlePicker = false
     @State private var showStats = false
+    @State private var isLandscape = Self.currentIsLandscape()
     @Environment(\.dismiss) private var dismiss
 
     // Configurable via modifiers
@@ -35,6 +37,15 @@ public struct CinePlayerView: View {
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
     }
+
+    private static func currentIsLandscape() -> Bool {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first else { return false }
+        return scene.interfaceOrientation.isLandscape
+    }
+
+    private let orientationChanged = NotificationCenter.default
+        .publisher(for: UIDevice.orientationDidChangeNotification)
 
     public var body: some View {
         ZStack {
@@ -54,6 +65,7 @@ public struct CinePlayerView: View {
             ControlsOverlay(
                 engine: engine,
                 controlsVisibility: controlsVisibility,
+                isLandscape: isLandscape,
                 titleInfo: titleInfo,
                 localization: engine.configuration.localization,
                 showingStats: showStats,
@@ -103,6 +115,9 @@ public struct CinePlayerView: View {
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        .onReceive(orientationChanged) { _ in
+            isLandscape = Self.currentIsLandscape()
+        }
         .task {
             // Wire up callbacks before activating.
             if let nowPlayingMetadata {
