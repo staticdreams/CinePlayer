@@ -10,6 +10,9 @@ public struct SubtitleTrackPicker: View {
     let onSelect: (Int) -> Void
     let onDisable: () -> Void
     let onDismiss: () -> Void
+    var onSearchOnline: (() -> Void)?
+    var hasExternalSubtitle: Bool = false
+    var onRemoveExternal: (() -> Void)?
 
     public init(
         tracks: [any PlayerSubtitleTrack],
@@ -18,7 +21,10 @@ public struct SubtitleTrackPicker: View {
         localization: PlayerLocalization = .english,
         onSelect: @escaping (Int) -> Void,
         onDisable: @escaping () -> Void,
-        onDismiss: @escaping () -> Void
+        onDismiss: @escaping () -> Void,
+        onSearchOnline: (() -> Void)? = nil,
+        hasExternalSubtitle: Bool = false,
+        onRemoveExternal: (() -> Void)? = nil
     ) {
         self.tracks = tracks
         self.selectedIndex = selectedIndex
@@ -27,6 +33,9 @@ public struct SubtitleTrackPicker: View {
         self.onSelect = onSelect
         self.onDisable = onDisable
         self.onDismiss = onDismiss
+        self.onSearchOnline = onSearchOnline
+        self.hasExternalSubtitle = hasExternalSubtitle
+        self.onRemoveExternal = onRemoveExternal
     }
 
     public var body: some View {
@@ -71,6 +80,36 @@ public struct SubtitleTrackPicker: View {
                                     .foregroundStyle(.blue)
                                     .fontWeight(.semibold)
                             }
+                        }
+                    }
+                }
+
+                // Active external subtitle
+                if hasExternalSubtitle {
+                    Section {
+                        HStack {
+                            Label(localization.externalSubtitleActive, systemImage: "globe")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.blue)
+                                .fontWeight(.semibold)
+                        }
+
+                        Button(role: .destructive) {
+                            onRemoveExternal?()
+                        } label: {
+                            Label(localization.removeExternalSubtitles, systemImage: "xmark.circle")
+                        }
+                    }
+                }
+
+                if let onSearchOnline {
+                    Section {
+                        Button {
+                            onSearchOnline()
+                        } label: {
+                            Label(localization.searchOnlineSubtitles, systemImage: "magnifyingglass")
                         }
                     }
                 }

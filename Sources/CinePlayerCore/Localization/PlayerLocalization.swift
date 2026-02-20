@@ -34,6 +34,12 @@ public struct PlayerLocalization: Sendable {
     public var statsAudioSubs: String
     public var statsNetwork: String
 
+    // MARK: - External Subtitles
+
+    public var searchOnlineSubtitles: String
+    public var removeExternalSubtitles: String
+    public var externalSubtitleActive: String
+
     // MARK: - Up Next
 
     public var upNext: String
@@ -69,6 +75,9 @@ public struct PlayerLocalization: Sendable {
         goLive: String,
         done: String,
         off: String,
+        searchOnlineSubtitles: String = "Search Online",
+        removeExternalSubtitles: String = "Remove External",
+        externalSubtitleActive: String = "External Subtitle",
         upNext: String = "Up Next",
         statsVideo: String,
         statsAudioSubs: String,
@@ -101,6 +110,9 @@ public struct PlayerLocalization: Sendable {
         self.goLive = goLive
         self.done = done
         self.off = off
+        self.searchOnlineSubtitles = searchOnlineSubtitles
+        self.removeExternalSubtitles = removeExternalSubtitles
+        self.externalSubtitleActive = externalSubtitleActive
         self.upNext = upNext
         self.statsVideo = statsVideo
         self.statsAudioSubs = statsAudioSubs

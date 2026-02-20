@@ -33,6 +33,10 @@ public struct CinePlayerView: View {
     private var onPlaybackEndCallback: (() -> Void)?
     private var onPlayNextCallback: (() -> Void)?
     private var onDismissNextCallback: (() -> Void)?
+    private var onSearchSubtitlesCallback: (() -> Void)?
+    private var onRemoveExternalSubtitlesCallback: (() -> Void)?
+    private var externalSubtitleContent: String?
+    private var hasExternalSubtitle: Bool = false
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -87,6 +91,14 @@ public struct CinePlayerView: View {
                     engine.isCollectingStats = showStats
                 }
             )
+
+            // External subtitle overlay
+            if engine.externalSubtitleState.isActive {
+                ExternalSubtitleOverlay(
+                    state: engine.externalSubtitleState,
+                    fontSize: engine.subtitleFontSize
+                )
+            }
 
             // Stats overlay (top-left)
             if showStats {
@@ -143,6 +155,11 @@ public struct CinePlayerView: View {
             engine.activate()
             controlsVisibility.show()
 
+            // Load external subtitle if provided.
+            if let externalSubtitleContent {
+                engine.externalSubtitleState.loadSubtitle(content: externalSubtitleContent)
+            }
+
             if let nowPlayingMetadata {
                 var artwork = nowPlayingMetadata.artwork
                 if artwork == nil, let artworkURL = nowPlayingMetadata.artworkURL {
@@ -172,6 +189,14 @@ public struct CinePlayerView: View {
         // Subtitle picker sheet
         .sheet(isPresented: $showSubtitlePicker) {
             subtitlePickerSheet
+        }
+        // React to external subtitle content changes (e.g. after user downloads from search sheet)
+        .onChange(of: externalSubtitleContent) { _, newContent in
+            if let newContent {
+                engine.externalSubtitleState.loadSubtitle(content: newContent)
+            } else {
+                engine.externalSubtitleState.clear()
+            }
         }
     }
 
@@ -216,6 +241,19 @@ public struct CinePlayerView: View {
             onDismiss: {
                 showSubtitlePicker = false
                 controlsVisibility.resetTimer()
+            },
+            onSearchOnline: onSearchSubtitlesCallback.map { callback in
+                {
+                    showSubtitlePicker = false
+                    callback()
+                }
+            },
+            hasExternalSubtitle: hasExternalSubtitle,
+            onRemoveExternal: onRemoveExternalSubtitlesCallback.map { callback in
+                {
+                    showSubtitlePicker = false
+                    callback()
+                }
             }
         )
     }
@@ -373,6 +411,28 @@ extension CinePlayerView {
     public func onDismissNext(_ callback: @escaping () -> Void) -> CinePlayerView {
         var view = self
         view.onDismissNextCallback = callback
+        return view
+    }
+
+    /// Sets the callback for when the user taps "Search Online" in the subtitle picker.
+    public func onSearchSubtitles(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onSearchSubtitlesCallback = callback
+        return view
+    }
+
+    /// Loads external subtitle content (WebVTT/SRT string) for overlay rendering.
+    public func externalSubtitle(_ content: String?, hasExternal: Bool = false) -> CinePlayerView {
+        var view = self
+        view.externalSubtitleContent = content
+        view.hasExternalSubtitle = hasExternal
+        return view
+    }
+
+    /// Sets the callback for removing external subtitles.
+    public func onRemoveExternalSubtitles(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onRemoveExternalSubtitlesCallback = callback
         return view
     }
 }

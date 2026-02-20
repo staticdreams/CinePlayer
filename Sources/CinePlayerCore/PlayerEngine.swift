@@ -22,6 +22,9 @@ public final class PlayerEngine {
     /// Track discovery and selection state.
     public let trackState = TrackState()
 
+    /// External subtitle state (for sideloaded subtitles from OpenSubtitles, etc.).
+    public let externalSubtitleState = ExternalSubtitleState()
+
     /// Playback statistics (populated when stats overlay is shown).
     public private(set) var stats = PlayerStats()
 
@@ -161,6 +164,9 @@ public final class PlayerEngine {
 
         // Fully unload media so AVPlayer releases its audio pipeline.
         player.replaceCurrentItem(with: nil)
+
+        // Clear external subtitles.
+        externalSubtitleState.clear()
 
         // Break retain cycles through callback closures.
         onProgressUpdate = nil
@@ -313,6 +319,9 @@ public final class PlayerEngine {
             }
 
             self.onProgressUpdate?(self.state.currentTime, self.state.duration)
+
+            // Update external subtitle cue.
+            self.externalSubtitleState.updateTime(seconds)
 
             // Collect stats if needed.
             if self.isCollectingStats {

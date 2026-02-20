@@ -27,7 +27,8 @@ CinePlayer is a Swift Package that delivers a full-featured video player built e
 - **Playback controls** — Play/pause, configurable skip forward/back (5/10/15/30/45s), seekable progress bar with drag interaction
 - **Playback speed** — 0.5x to 2x in 0.25x increments, inline speed picker
 - **Audio track picker** — Protocol-based with rich display names (e.g. "Russian -- Dubbing (LostFilm) AAC 2ch")
-- **Subtitle picker** — Protocol-based with on/off toggle; auto-discovers subtitles from media when none provided
+- **Subtitle picker** — Protocol-based with on/off toggle; auto-discovers subtitles from media when none provided; optional "Search Online" button for external subtitle integration
+- **External subtitle overlay** — SwiftUI text overlay for sideloaded subtitles (WebVTT/SRT), driven by the time observer with binary search cue matching; respects subtitle font size setting
 - **Rich title display** — Up to three lines: primary title, subtitle, metadata components joined with " . "
 - **HLS manifest interception** — Rewrites `#EXT-X-MEDIA` names in master playlists for human-readable audio labels
 - **Picture-in-Picture** — Built into the player view, also available as standalone `PiPManager`
@@ -237,6 +238,39 @@ CinePlayerView(url: videoURL)
 
 If you don't provide subtitle tracks, CinePlayer auto-discovers them from the media's `AVMediaSelectionGroup` and displays them with their native `displayName`.
 
+### External Subtitles (Sideloaded)
+
+CinePlayer can render externally-loaded subtitles (e.g. from OpenSubtitles, SubDL) as a SwiftUI text overlay on top of the video. This avoids the complexity of HLS manifest injection and works universally for all stream types.
+
+```swift
+CinePlayerView(url: videoURL)
+    // Show "Search Online" button in the subtitle picker
+    .onSearchSubtitles {
+        showSubtitleSearchSheet = true
+    }
+    // Load external subtitle content (WebVTT or SRT string)
+    .externalSubtitle(webvttContent, hasExternal: webvttContent != nil)
+    // Handle removal
+    .onRemoveExternalSubtitles {
+        webvttContent = nil
+    }
+```
+
+**How it works:**
+
+1. The host app provides subtitle content as a WebVTT or SRT string via `.externalSubtitle()`
+2. `WebVTTParser` parses the content into time-stamped cues
+3. `ExternalSubtitleState` uses binary search on each 500ms time observer tick to find the active cue
+4. `ExternalSubtitleOverlay` renders the active cue text at the bottom of the video with a semi-transparent background
+
+The subtitle picker gains two optional UI elements:
+- **"Search Online"** button (magnifyingglass icon) — appears when `.onSearchSubtitles` is set
+- **"Remove External"** button — appears when `hasExternal: true` is passed
+
+Both WebVTT and SRT formats are supported. SRT is a structural subset of WebVTT, so the parser handles both transparently (normalizes comma→dot timestamps, strips sequence numbers, removes HTML tags).
+
+The overlay respects the `SubtitleFontSize` setting and uses smooth opacity transitions on cue changes.
+
 ### HLS Manifest Rewriting
 
 For HLS streams, CinePlayer can intercept the master playlist and rewrite `#EXT-X-MEDIA` audio track names with your rich labels:
@@ -325,7 +359,7 @@ extension PlayerLocalization {
         playbackSpeed: "Швидкість",
         audio: "Аудіо",
         subtitles: "Субтитри",
-        // ... all 27 properties
+        // ... all 31 properties
     )
 }
 ```
@@ -511,6 +545,9 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 | `.localization(_:)` | `PlayerLocalization` | Full custom localization |
 | `.onProgressUpdate(_:)` | `(TimeInterval, TimeInterval) -> Void` | Called every 500ms with (currentTime, duration) |
 | `.onPlaybackEnd(_:)` | `() -> Void` | Called when video reaches the end |
+| `.onSearchSubtitles(_:)` | `() -> Void` | Called when user taps "Search Online" in subtitle picker |
+| `.externalSubtitle(_:hasExternal:)` | `String?, Bool` | Loads external WebVTT/SRT content for overlay rendering |
+| `.onRemoveExternalSubtitles(_:)` | `() -> Void` | Called when user taps "Remove External" in subtitle picker |
 
 ## Type Reference
 
@@ -575,7 +612,7 @@ Controls auto-hide after 4 seconds of inactivity. Any interaction resets the tim
 
 ### PlayerLocalization
 
-A `Sendable` struct holding all 29 user-facing strings in CinePlayer. Built-in presets:
+A `Sendable` struct holding all 31 user-facing strings in CinePlayer. Built-in presets:
 
 | Static Property | Language |
 | --------------- | -------- |

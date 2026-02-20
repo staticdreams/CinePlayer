@@ -60,10 +60,12 @@ All mutable state classes use `@Observable @MainActor`. All public value types c
 | `PlayerEngine` | @Observable class | Core playback engine, owns AVPlayer |
 | `PlayerState` | Sendable struct | Read-only playback state |
 | `TrackState` | @Observable class | Track discovery and selection |
+| `ExternalSubtitleState` | @Observable class | External subtitle cue management |
+| `WebVTTCue` | Sendable struct | Single subtitle cue (start, end, text) |
 | `PlayerConfiguration` | Sendable struct | Startup config (startTime, autoPlay, loop, speeds, gravity) |
 | `PlayerAudioTrack` | Protocol (Sendable) | Custom audio track metadata |
 | `PlayerSubtitleTrack` | Protocol (Sendable) | Custom subtitle track metadata |
-| `PlayerLocalization` | Sendable struct | 29 user-facing strings |
+| `PlayerLocalization` | Sendable struct | 31 user-facing strings |
 | `PlayerStats` | Sendable struct | Video/audio/network statistics |
 | `PlayerTitleInfo` | Sendable struct | Rich title display (title, subtitle, metadata) |
 | `HLSAudioTrackInfo` | Sendable struct | HLS manifest rewriting metadata |
@@ -92,9 +94,57 @@ For HLS streams, CinePlayer can rewrite `#EXT-X-MEDIA` audio track names:
 6. `HLSPlaylistRewriter` rewrites `NAME=` attributes and resolves relative URIs
 7. Modified playlist returned to AVPlayer transparently
 
+## External Subtitles
+
+CinePlayer supports sideloaded subtitles rendered as a SwiftUI text overlay, driven by the existing 500ms time observer. This avoids HLS manifest injection complexity and works universally.
+
+### Architecture
+
+1. **`WebVTTParser`** — Pure `Sendable` enum. Parses both WebVTT and SRT formats into `[WebVTTCue]`. Handles BOM removal, HTML tag stripping, timestamp normalization (comma→dot for SRT).
+2. **`ExternalSubtitleState`** — `@Observable @MainActor` class owned by `PlayerEngine`. Holds parsed cues and exposes `activeCue` via binary search on each time observer tick.
+3. **`ExternalSubtitleOverlay`** — SwiftUI view rendering `activeCue?.text` at the bottom of the video with semi-transparent background pill. Respects `SubtitleFontSize`. Positioned in the ZStack between the video surface and controls overlay.
+
+### Integration via CinePlayerView Modifiers
+
+The host app controls external subtitles through three modifiers on `CinePlayerView`:
+
+```swift
+CinePlayerView(url: streamURL)
+    .onSearchSubtitles { /* show search UI */ }
+    .externalSubtitle(webvttContent, hasExternal: true)
+    .onRemoveExternalSubtitles { /* clear subtitle content */ }
+```
+
+- **`.onSearchSubtitles`** — Callback when user taps "Search Online" in `SubtitleTrackPicker`. The picker dismisses first, then the callback fires.
+- **`.externalSubtitle(_ content:, hasExternal:)`** — Loads WebVTT/SRT string content into `ExternalSubtitleState`. Pass `hasExternal: true` to show the "Remove External" option in the picker.
+- **`.onRemoveExternalSubtitles`** — Callback when user taps "Remove External" in the picker.
+
+### SubtitleTrackPicker Changes
+
+`SubtitleTrackPicker` now accepts three optional parameters:
+- `onSearchOnline: (() -> Void)?` — Renders a "Search Online" button (magnifyingglass icon) at the bottom of the track list
+- `hasExternalSubtitle: Bool` — When `true`, shows a "Remove External Subtitles" destructive button
+- `onRemoveExternal: (() -> Void)?` — Callback for the remove action
+
+### Data Flow
+
+```
+SubtitleTrackPicker → "Search Online" → onSearchSubtitles callback
+→ Host app shows search UI → downloads subtitle → converts to WebVTT
+→ .externalSubtitle(content) modifier → ExternalSubtitleState.loadSubtitle()
+→ TimeObserver ticks → updateTime() → binary search → activeCue
+→ ExternalSubtitleOverlay renders text
+```
+
+### Key Design Decisions
+
+- **SwiftUI overlay vs AVFoundation subtitle tracks**: Overlay approach avoids `AVMutableComposition` complexity and HLS manifest injection mid-stream. Works universally for all stream types.
+- **Binary search for active cue**: Cues are sorted by `startTime`; `updateTime()` uses binary search for O(log n) lookup on each 500ms tick.
+- **PlayerEngine owns ExternalSubtitleState**: Automatically cleared on `deactivate()`, ensuring no stale subtitles persist across sessions.
+
 ## Localization
 
-`PlayerLocalization` holds 29 user-facing strings. Ships with English and Russian.
+`PlayerLocalization` holds 31 user-facing strings. Ships with English and Russian.
 
 To add a language, create an extension:
 
@@ -103,7 +153,7 @@ extension PlayerLocalization {
     public static let ukrainian = PlayerLocalization(
         playbackSpeed: "Швидкість",
         audio: "Аудіо",
-        // ... all 29 properties
+        // ... all 31 properties
     )
 }
 ```
@@ -135,8 +185,11 @@ Sources/
 │   │   ├── HLSManifestInterceptor.swift # AVAssetResourceLoaderDelegate
 │   │   ├── HLSPlaylistRewriter.swift    # Playlist manipulation
 │   │   └── HLSInterceptorScheme.swift   # Custom scheme constant
+│   ├── Subtitles/
+│   │   ├── WebVTTParser.swift           # WebVTT/SRT parser → [WebVTTCue]
+│   │   └── ExternalSubtitleState.swift  # External subtitle state management
 │   ├── Localization/
-│   │   ├── PlayerLocalization.swift     # Base struct (29 strings)
+│   │   ├── PlayerLocalization.swift     # Base struct (31 strings)
 │   │   ├── PlayerLocalization+en.swift  # English
 │   │   └── PlayerLocalization+ru.swift  # Russian
 │   └── Observation/
@@ -162,6 +215,8 @@ Sources/
 │   │   └── VideoSurfaceUIView.swift    # UIView with AVPlayerLayer
 │   ├── Gestures/
 │   │   └── PlayerGestureHandler.swift  # Tap, double-tap gestures
+│   ├── Subtitles/
+│   │   └── ExternalSubtitleOverlay.swift # External subtitle text overlay
 │   ├── Stats/
 │   │   └── StatsOverlayView.swift      # Debug stats overlay
 │   └── UpNext/
