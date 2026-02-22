@@ -435,4 +435,12 @@ extension CinePlayerView {
         view.onRemoveExternalSubtitlesCallback = callback
         return view
     }
+
+    /// Sets the preferred maximum resolution for quality-constrained playback.
+    /// AVPlayer will prefer HLS variants at or below this resolution.
+    public func preferredResolution(_ size: CGSize?) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.preferredMaximumResolution = size
+        return view
+    }
 }

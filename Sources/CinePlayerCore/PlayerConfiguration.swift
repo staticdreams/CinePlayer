@@ -23,6 +23,10 @@ public struct PlayerConfiguration: Sendable {
     /// Localized strings for the player UI.
     public var localization: PlayerLocalization = .english
 
+    /// Preferred maximum video resolution for quality-constrained playback.
+    /// When set, AVPlayer will prefer streams at or below this resolution.
+    public var preferredMaximumResolution: CGSize?
+
     /// Whether the subtitle font size control is shown.
     public var subtitleFontSizeEnabled: Bool = false
 

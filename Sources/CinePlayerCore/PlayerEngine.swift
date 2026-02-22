@@ -131,6 +131,10 @@ public final class PlayerEngine {
             item = AVPlayerItem(url: url)
         }
 
+        if let resolution = configuration.preferredMaximumResolution {
+            item.preferredMaximumResolution = resolution
+        }
+
         player.replaceCurrentItem(with: item)
 
         setupTimeObserver()
@@ -188,6 +192,9 @@ public final class PlayerEngine {
 
         if isActivated {
             let item = AVPlayerItem(url: newURL)
+            if let resolution = configuration.preferredMaximumResolution {
+                item.preferredMaximumResolution = resolution
+            }
             player.replaceCurrentItem(with: item)
             // currentItem observer will handle the rest.
         }
