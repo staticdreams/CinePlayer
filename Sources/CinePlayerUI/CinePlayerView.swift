@@ -114,15 +114,28 @@ public struct CinePlayerView: View {
             }
 
             // Up Next overlay (bottom-right, above progress bar)
-            if engine.isUpNextVisible, let upNextItem = engine.upNextItem {
+            if engine.isUpNextVisible {
                 UpNextOverlay(
-                    item: upNextItem,
+                    item: engine.upNextItem,
                     countdown: engine.upNextCountdown,
+                    countdownDuration: engine.upNextItem?.countdownDuration ?? 0,
                     localization: engine.configuration.localization,
                     onTap: { engine.triggerPlayNext() },
-                    onDismiss: { engine.dismissUpNext() }
+                    onDismiss: { engine.dismissUpNext() },
+                    onReplay: engine.onReplayRequested != nil ? { engine.triggerReplay() } : nil
                 )
                 .animation(.spring(response: 0.5, dampingFraction: 0.8), value: engine.isUpNextVisible)
+            } else if engine.isReplayVisible {
+                UpNextOverlay(
+                    item: nil,
+                    countdown: engine.replayCountdown,
+                    countdownDuration: engine.replayCountdownDuration,
+                    localization: engine.configuration.localization,
+                    onTap: { engine.triggerReplay() },
+                    onDismiss: { engine.dismissUpNext() },
+                    onReplay: nil
+                )
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: engine.isReplayVisible)
             }
         }
         .statusBarHidden()

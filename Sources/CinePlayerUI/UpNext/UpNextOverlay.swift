@@ -1,14 +1,17 @@
 import CinePlayerCore
 import SwiftUI
 
-/// "Coming Up Next" banner that appears near the end of an episode.
+/// "Coming Up Next" banner that appears near the end of an episode,
+/// or standalone "Watch Again" banner when no next item is available.
 /// Positioned at bottom-trailing, above the progress bar area.
 struct UpNextOverlay: View {
-    let item: UpNextItem
+    let item: UpNextItem?          // nil = standalone Watch Again mode
     let countdown: TimeInterval
+    let countdownDuration: TimeInterval
     let localization: PlayerLocalization
     let onTap: () -> Void
     let onDismiss: () -> Void
+    let onReplay: (() -> Void)?    // secondary replay action (shown on Up Next banner)
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -21,19 +24,27 @@ struct UpNextOverlay: View {
             Spacer()
             HStack {
                 Spacer()
-                bannerContent
-                    .padding(.trailing, isLandscape ? 60 : 16)
-                    .padding(.bottom, isLandscape ? 80 : 100)
+                Group {
+                    if item != nil {
+                        bannerContent
+                    } else {
+                        watchAgainBanner
+                    }
+                }
+                .padding(.trailing, isLandscape ? 60 : 16)
+                .padding(.bottom, isLandscape ? 80 : 100)
             }
         }
         .allowsHitTesting(true)
         .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 
+    // MARK: - Up Next Banner
+
     private var bannerContent: some View {
         HStack(spacing: 10) {
             // Thumbnail
-            AsyncImage(url: item.thumbnailURL) { phase in
+            AsyncImage(url: item?.thumbnailURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -58,10 +69,12 @@ struct UpNextOverlay: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.6))
 
-                Text(item.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
+                if let title = item?.title {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(2)
+                }
             }
             .frame(maxWidth: 140, alignment: .leading)
 
@@ -84,11 +97,57 @@ struct UpNextOverlay: View {
             .buttonStyle(.plain)
             .offset(x: 6, y: -6)
         }
+        .overlay(alignment: .bottomTrailing) {
+            if let onReplay {
+                Button(action: onReplay) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 24, height: 24)
+                        .glassCircle(size: 24)
+                }
+                .buttonStyle(.plain)
+                .offset(x: 6, y: 6)
+            }
+        }
     }
 
+    // MARK: - Watch Again Banner
+
+    private var watchAgainBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.8))
+
+            Text(localization.watchAgain.uppercased())
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+
+            countdownRing
+        }
+        .padding(10)
+        .roundedGlass(cornerRadius: 16)
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .onTapGesture(perform: onTap)
+        .overlay(alignment: .topTrailing) {
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(width: 24, height: 24)
+                    .glassCircle(size: 24)
+            }
+            .buttonStyle(.plain)
+            .offset(x: 6, y: -6)
+        }
+    }
+
+    // MARK: - Countdown Ring
+
     private var countdownRing: some View {
-        let progress = item.countdownDuration > 0
-            ? countdown / item.countdownDuration
+        let progress = countdownDuration > 0
+            ? countdown / countdownDuration
             : 0
 
         return ZStack {
