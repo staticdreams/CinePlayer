@@ -33,6 +33,7 @@ public struct CinePlayerView: View {
     private var onPlaybackEndCallback: (() -> Void)?
     private var onPlayNextCallback: (() -> Void)?
     private var onDismissNextCallback: (() -> Void)?
+    private var onReplayCallback: (() -> Void)?
     private var onSearchSubtitlesCallback: (() -> Void)?
     private var onRemoveExternalSubtitlesCallback: (() -> Void)?
     private var externalSubtitleContent: String?
@@ -162,6 +163,11 @@ public struct CinePlayerView: View {
             }
             engine.onDismissNext = { [onDismissNextCallback] in
                 onDismissNextCallback?()
+            }
+            if let onReplayCallback {
+                engine.onReplayRequested = {
+                    onReplayCallback()
+                }
             }
 
             setAudioSession()
@@ -424,6 +430,13 @@ extension CinePlayerView {
     public func onDismissNext(_ callback: @escaping () -> Void) -> CinePlayerView {
         var view = self
         view.onDismissNextCallback = callback
+        return view
+    }
+
+    /// Sets the callback for when the user wants to replay the current item.
+    public func onReplay(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onReplayCallback = callback
         return view
     }
 
