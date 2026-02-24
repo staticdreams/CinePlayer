@@ -15,7 +15,7 @@ extension PlayerLocalization {
         externalSubtitleActive: "Внешние субтитры",
         volumeBoost: "Усиление звука",
         upNext: "Далее",
-        watchAgain: "Смотреть снова",
+        watchAgain: "Посмотреть еще раз?",
         statsVideo: "ВИДЕО",
         statsAudioSubs: "АУДИО / СУБТИТРЫ",
         statsNetwork: "СЕТЬ",

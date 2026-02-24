@@ -15,7 +15,7 @@ extension PlayerLocalization {
         externalSubtitleActive: "External Subtitle",
         volumeBoost: "Volume Boost",
         upNext: "Up Next",
-        watchAgain: "Watch Again",
+        watchAgain: "Watch again?",
         statsVideo: "VIDEO",
         statsAudioSubs: "AUDIO / SUBS",
         statsNetwork: "NETWORK",
