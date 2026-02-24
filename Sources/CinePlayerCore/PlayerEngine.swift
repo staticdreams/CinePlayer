@@ -74,6 +74,39 @@ public final class PlayerEngine {
         return min(max(state.remainingTime, 0), item.countdownDuration)
     }
 
+    // MARK: - Replay
+
+    /// Called when the user wants to replay the current item.
+    public var onReplayRequested: (() -> Void)?
+
+    /// Countdown duration for standalone "Watch Again" banner (default 30s).
+    public var replayCountdownDuration: TimeInterval = 30
+
+    /// Whether the standalone "Watch Again" banner should be visible
+    /// (no up-next item, replay callback set, within countdown window).
+    public var isReplayVisible: Bool {
+        guard upNextItem == nil,
+              onReplayRequested != nil,
+              !upNextDismissed,
+              !state.isLive,
+              !configuration.loop,
+              state.duration > replayCountdownDuration,
+              state.remainingTime <= replayCountdownDuration,
+              state.remainingTime > 0
+        else { return false }
+        return true
+    }
+
+    /// Countdown seconds remaining for the replay banner.
+    public var replayCountdown: TimeInterval {
+        min(max(state.remainingTime, 0), replayCountdownDuration)
+    }
+
+    /// Whether the replay button should appear on the Up Next banner.
+    public var showReplayOnUpNext: Bool {
+        onReplayRequested != nil && isUpNextVisible
+    }
+
     // MARK: - Internal
 
     /// The underlying AVPlayer (exposed for VideoSurfaceView).
@@ -185,6 +218,7 @@ public final class PlayerEngine {
         onPlaybackEnd = nil
         onPlayNext = nil
         onDismissNext = nil
+        onReplayRequested = nil
 
         // Release HLS manifest interceptor.
         hlsInterceptor = nil
@@ -303,6 +337,13 @@ public final class PlayerEngine {
     /// Trigger playback of the next item (user tapped the banner).
     public func triggerPlayNext() {
         onPlayNext?()
+    }
+
+    // MARK: - Replay actions
+
+    /// Trigger replay of the current item (user tapped the replay button).
+    public func triggerReplay() {
+        onReplayRequested?()
     }
 
     // MARK: - Track selection (convenience)
@@ -426,6 +467,9 @@ public final class PlayerEngine {
             } else if self.upNextItem != nil && !self.upNextDismissed {
                 self.state.isPlaying = false
                 self.onPlayNext?()
+            } else if self.onReplayRequested != nil && !self.upNextDismissed {
+                self.state.isPlaying = false
+                self.onReplayRequested?()
             } else {
                 self.state.isPlaying = false
                 self.onPlaybackEnd?()
