@@ -40,9 +40,14 @@ public struct PlayerLocalization: Sendable {
     public var removeExternalSubtitles: String
     public var externalSubtitleActive: String
 
+    // MARK: - Volume Boost
+
+    public var volumeBoost: String
+
     // MARK: - Up Next
 
     public var upNext: String
+    public var watchAgain: String
 
     // MARK: - Stats Labels
 
@@ -78,7 +83,9 @@ public struct PlayerLocalization: Sendable {
         searchOnlineSubtitles: String = "Search Online",
         removeExternalSubtitles: String = "Remove External",
         externalSubtitleActive: String = "External Subtitle",
+        volumeBoost: String = "Volume Boost",
         upNext: String = "Up Next",
+        watchAgain: String = "Watch Again",
         statsVideo: String,
         statsAudioSubs: String,
         statsNetwork: String,
@@ -113,7 +120,9 @@ public struct PlayerLocalization: Sendable {
         self.searchOnlineSubtitles = searchOnlineSubtitles
         self.removeExternalSubtitles = removeExternalSubtitles
         self.externalSubtitleActive = externalSubtitleActive
+        self.volumeBoost = volumeBoost
         self.upNext = upNext
+        self.watchAgain = watchAgain
         self.statsVideo = statsVideo
         self.statsAudioSubs = statsAudioSubs
         self.statsNetwork = statsNetwork

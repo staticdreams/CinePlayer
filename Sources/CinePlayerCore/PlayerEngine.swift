@@ -36,6 +36,11 @@ public final class PlayerEngine {
         didSet { applySubtitleFontSize() }
     }
 
+    /// Whether volume boost (2x gain via AVAudioMix) is active.
+    public var isVolumeBoosted: Bool = false {
+        didSet { applyVolumeBoost() }
+    }
+
     // MARK: - Up Next
 
     /// Set by the host app to show the "Coming Up Next" banner.
@@ -94,6 +99,9 @@ public final class PlayerEngine {
     private var currentItemObservation: NSKeyValueObservation?
     private var hasPerformedInitialSeek = false
     private var isActivated = false
+
+    /// Audio gain amplification tap (must stay alive while playing).
+    private let audioBoostTap = AudioBoostTap()
 
     /// Holds a strong reference to the HLS manifest interceptor (must stay alive while playing).
     private var hlsInterceptor: HLSManifestInterceptor?
@@ -279,6 +287,11 @@ public final class PlayerEngine {
         state.isMuted = player.isMuted
     }
 
+    /// Toggles volume boost on/off (2x audio gain via AVAudioMix).
+    public func toggleVolumeBoost() {
+        isVolumeBoosted.toggle()
+    }
+
     // MARK: - Up Next actions
 
     /// Dismiss the up-next banner for the current item.
@@ -382,6 +395,7 @@ public final class PlayerEngine {
                 self.state.status = .readyToPlay
                 self.performInitialSeekIfNeeded()
                 self.applySubtitleFontSize()
+                self.installAudioBoostTap()
 
                 // Discover tracks.
                 Task {
@@ -428,6 +442,23 @@ public final class PlayerEngine {
 
         observer.observe(item)
         self.itemObserver = observer
+    }
+
+    private func applyVolumeBoost() {
+        audioBoostTap.setGain(isVolumeBoosted ? 2.0 : 1.0)
+    }
+
+    /// Installs the audio processing tap on the current player item.
+    /// Called once when the item becomes ready (tracks are available).
+    private func installAudioBoostTap() {
+        guard let item = player.currentItem else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            guard let tracks = try? await item.asset.loadTracks(withMediaType: .audio),
+                  let audioTrack = tracks.first else { return }
+            let mix = self.audioBoostTap.createAudioMix(for: audioTrack)
+            item.audioMix = mix
+        }
     }
 
     private func applySubtitleFontSize() {
