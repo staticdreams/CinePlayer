@@ -41,7 +41,7 @@ final class AudioBoostTap {
             process: boostTapProcess
         )
 
-        var tap: Unmanaged<MTAudioProcessingTap>?
+        var tap: MTAudioProcessingTap?
         let status = MTAudioProcessingTapCreate(
             kCFAllocatorDefault,
             &callbacks,
@@ -52,7 +52,7 @@ final class AudioBoostTap {
         guard status == noErr, let createdTap = tap else { return nil }
 
         let params = AVMutableAudioMixInputParameters(track: track)
-        params.audioTapProcessor = createdTap.takeRetainedValue()
+        params.audioTapProcessor = createdTap
 
         let mix = AVMutableAudioMix()
         mix.inputParameters = [params]
