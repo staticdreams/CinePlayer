@@ -15,6 +15,7 @@ struct ControlsOverlay: View {
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
     let onStatsTap: () -> Void
+    let onNextEpisode: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -95,6 +96,12 @@ struct ControlsOverlay: View {
                         },
                         onMenuOpen: {
                             controlsVisibility.cancelTimer()
+                        },
+                        onNextEpisode: onNextEpisode.map { callback in
+                            {
+                                callback()
+                                controlsVisibility.resetTimer()
+                            }
                         }
                     )
                 }

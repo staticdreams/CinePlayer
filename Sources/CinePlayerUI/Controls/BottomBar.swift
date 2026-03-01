@@ -15,6 +15,7 @@ struct BottomBar: View {
     let onStatsTap: () -> Void
     let onInteraction: () -> Void
     let onMenuOpen: () -> Void
+    var onNextEpisode: (() -> Void)?
 
     private var isLive: Bool {
         engine.state.isLive
@@ -37,6 +38,15 @@ struct BottomBar: View {
                 titleView(fontSize: 18)
 
                 Spacer(minLength: 12)
+
+                if let onNextEpisode {
+                    Button(action: onNextEpisode) {
+                        Image(systemName: "forward.end.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .circleGlass(size: 48)
+                    }
+                }
 
                 portraitMenu
             }
@@ -68,6 +78,15 @@ struct BottomBar: View {
                 titleView(fontSize: 16)
 
                 Spacer(minLength: 12)
+
+                if let onNextEpisode {
+                    Button(action: onNextEpisode) {
+                        Image(systemName: "forward.end.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .circleGlass(size: 44)
+                    }
+                }
 
                 // Options pill — audio, speed (hidden for live), subtitles, stats (all inline)
                 HStack(spacing: 0) {

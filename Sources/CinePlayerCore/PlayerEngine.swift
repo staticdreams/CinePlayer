@@ -133,6 +133,9 @@ public final class PlayerEngine {
     private var hasPerformedInitialSeek = false
     private var isActivated = false
 
+    /// Tracks the target time of an in-flight seek so rapid skip taps accumulate.
+    private var pendingSeekTarget: TimeInterval?
+
     /// Audio gain amplification tap (must stay alive while playing).
     private let audioBoostTap = AudioBoostTap()
 
@@ -271,6 +274,7 @@ public final class PlayerEngine {
     }
 
     public func seek(to seconds: TimeInterval) {
+        pendingSeekTarget = nil
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
             guard let self, finished else { return }
@@ -282,18 +286,38 @@ public final class PlayerEngine {
 
     public func skipForward(_ seconds: TimeInterval = 10) {
         guard let item = player.currentItem else { return }
-        let current = CMTimeGetSeconds(item.currentTime())
         let duration = CMTimeGetSeconds(item.duration)
         guard duration.isFinite else { return }
-        let target = min(current + seconds, duration)
-        seek(to: target)
+        let base = pendingSeekTarget ?? CMTimeGetSeconds(item.currentTime())
+        let target = min(base + seconds, duration)
+        pendingSeekTarget = target
+        let time = CMTime(seconds: target, preferredTimescale: 600)
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            guard let self, finished else { return }
+            MainActor.assumeIsolated {
+                if self.pendingSeekTarget == target {
+                    self.pendingSeekTarget = nil
+                }
+                self.state.didFinishPlaying = false
+            }
+        }
     }
 
     public func skipBackward(_ seconds: TimeInterval = 10) {
         guard let item = player.currentItem else { return }
-        let current = CMTimeGetSeconds(item.currentTime())
-        let target = max(current - seconds, 0)
-        seek(to: target)
+        let base = pendingSeekTarget ?? CMTimeGetSeconds(item.currentTime())
+        let target = max(base - seconds, 0)
+        pendingSeekTarget = target
+        let time = CMTime(seconds: target, preferredTimescale: 600)
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            guard let self, finished else { return }
+            MainActor.assumeIsolated {
+                if self.pendingSeekTarget == target {
+                    self.pendingSeekTarget = nil
+                }
+                self.state.didFinishPlaying = false
+            }
+        }
     }
 
     /// Seeks to the live edge of a live stream.
