@@ -40,6 +40,7 @@ public struct CinePlayerView: View {
     private var hasExternalSubtitle: Bool = false
     private var onNextEpisodeCallback: (() -> Void)?
     private var hasNextEpisodeFlag: Bool = false
+    private var swipeToDismiss: Bool = true
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -55,6 +56,15 @@ public struct CinePlayerView: View {
         .publisher(for: UIDevice.orientationDidChangeNotification)
 
     public var body: some View {
+        playerContent
+            .swipeToDismiss(enabled: swipeToDismiss) {
+                engine.deactivate()
+                dismiss()
+            }
+    }
+
+    @ViewBuilder
+    private var playerContent: some View {
         ZStack {
             // Full-bleed background + video (ignore safe area)
             Color.black.ignoresSafeArea()
@@ -484,6 +494,13 @@ extension CinePlayerView {
         var view = self
         view.onNextEpisodeCallback = callback
         view.hasNextEpisodeFlag = callback != nil
+        return view
+    }
+
+    /// Enables or disables swipe-down-to-dismiss gesture.
+    public func swipeToDismissEnabled(_ enabled: Bool) -> CinePlayerView {
+        var view = self
+        view.swipeToDismiss = enabled
         return view
     }
 }
