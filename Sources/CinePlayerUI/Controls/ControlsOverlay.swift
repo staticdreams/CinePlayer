@@ -7,6 +7,7 @@ struct ControlsOverlay: View {
     let engine: PlayerEngine
     let controlsVisibility: ControlsVisibility
     let isLandscape: Bool
+    let hasNextEpisode: Bool
     let titleInfo: PlayerTitleInfo
     let localization: PlayerLocalization
     let showingStats: Bool
@@ -15,7 +16,6 @@ struct ControlsOverlay: View {
     let onAudioTrackTap: () -> Void
     let onSubtitleTrackTap: () -> Void
     let onStatsTap: () -> Void
-    let onNextEpisode: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -97,12 +97,10 @@ struct ControlsOverlay: View {
                         onMenuOpen: {
                             controlsVisibility.cancelTimer()
                         },
-                        onNextEpisode: onNextEpisode.map { callback in
-                            {
-                                callback()
-                                controlsVisibility.resetTimer()
-                            }
-                        }
+                        onNextEpisode: hasNextEpisode ? {
+                            engine.onNextEpisode?()
+                            controlsVisibility.resetTimer()
+                        } : nil
                     )
                 }
                 .transition(.opacity)

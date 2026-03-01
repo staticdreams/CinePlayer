@@ -74,6 +74,14 @@ public final class PlayerEngine {
         return min(max(state.remainingTime, 0), item.countdownDuration)
     }
 
+    // MARK: - Next Episode
+
+    /// Whether the "next episode" button should appear in the controls.
+    public var hasNextEpisode: Bool = false
+
+    /// Called when the user taps the "next episode" button.
+    public var onNextEpisode: (() -> Void)?
+
     // MARK: - Replay
 
     /// Called when the user wants to replay the current item.
@@ -222,6 +230,7 @@ public final class PlayerEngine {
         onPlayNext = nil
         onDismissNext = nil
         onReplayRequested = nil
+        onNextEpisode = nil
 
         // Release HLS manifest interceptor.
         hlsInterceptor = nil

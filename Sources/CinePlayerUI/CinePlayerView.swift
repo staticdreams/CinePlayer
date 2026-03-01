@@ -39,6 +39,7 @@ public struct CinePlayerView: View {
     private var externalSubtitleContent: String?
     private var hasExternalSubtitle: Bool = false
     private var onNextEpisodeCallback: (() -> Void)?
+    private var hasNextEpisodeFlag: Bool = false
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -72,6 +73,7 @@ public struct CinePlayerView: View {
                 engine: engine,
                 controlsVisibility: controlsVisibility,
                 isLandscape: isLandscape,
+                hasNextEpisode: hasNextEpisodeFlag,
                 titleInfo: titleInfo,
                 localization: engine.configuration.localization,
                 showingStats: showStats,
@@ -91,8 +93,7 @@ public struct CinePlayerView: View {
                 onStatsTap: {
                     showStats.toggle()
                     engine.isCollectingStats = showStats
-                },
-                onNextEpisode: onNextEpisodeCallback
+                }
             )
 
             // External subtitle overlay
@@ -169,6 +170,11 @@ public struct CinePlayerView: View {
             if let onReplayCallback {
                 engine.onReplayRequested = {
                     onReplayCallback()
+                }
+            }
+            if let onNextEpisodeCallback {
+                engine.onNextEpisode = {
+                    onNextEpisodeCallback()
                 }
             }
 
@@ -474,9 +480,10 @@ extension CinePlayerView {
 
     /// Shows a "next episode" button in the player controls.
     /// The button appears only when this callback is set.
-    public func onNextEpisode(_ callback: @escaping () -> Void) -> CinePlayerView {
+    public func onNextEpisode(_ callback: (() -> Void)?) -> CinePlayerView {
         var view = self
         view.onNextEpisodeCallback = callback
+        view.hasNextEpisodeFlag = callback != nil
         return view
     }
 }
