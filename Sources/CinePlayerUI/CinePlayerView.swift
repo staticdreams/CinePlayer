@@ -41,6 +41,8 @@ public struct CinePlayerView: View {
     private var onNextEpisodeCallback: (() -> Void)?
     private var hasNextEpisodeFlag: Bool = false
     private var swipeToDismiss: Bool = true
+    private var onAudioTrackSelectedCallback: ((Int) -> Void)?
+    private var onEngineReadyCallback: ((PlayerEngine) -> Void)?
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -192,6 +194,10 @@ public struct CinePlayerView: View {
             engine.activate()
             controlsVisibility.show()
 
+            // Hand the engine to the host app so it can observe state and
+            // route remote commands (e.g. from a watchOS companion).
+            onEngineReadyCallback?(engine)
+
             // Load external subtitle if provided.
             if let externalSubtitleContent {
                 engine.externalSubtitleState.loadSubtitle(content: externalSubtitleContent)
@@ -247,6 +253,7 @@ public struct CinePlayerView: View {
             localization: engine.configuration.localization,
             onSelect: { index in
                 engine.trackState.selectedAudioIndex = index
+                onAudioTrackSelectedCallback?(index)
                 showAudioPicker = false
                 controlsVisibility.resetTimer()
             },
@@ -501,6 +508,28 @@ extension CinePlayerView {
     public func swipeToDismissEnabled(_ enabled: Bool) -> CinePlayerView {
         var view = self
         view.swipeToDismiss = enabled
+        return view
+    }
+
+    /// Sets a callback invoked when the user selects an audio track in the in-player picker.
+    /// The callback receives the selected track index (in the audioTracks array).
+    public func onAudioTrackSelected(_ callback: @escaping (Int) -> Void) -> CinePlayerView {
+        var view = self
+        view.onAudioTrackSelectedCallback = callback
+        return view
+    }
+
+    /// Delivers the active `PlayerEngine` to the host app once it has been
+    /// activated. Use this to observe playback state and invoke commands
+    /// (play/pause/seek/selectAudioTrack/…) from outside the player view —
+    /// for example, from a remote-control surface such as a watchOS companion.
+    ///
+    /// The callback fires once per presentation, on the main actor, after the
+    /// engine's internal callbacks have been wired. The host should hold a
+    /// weak reference to the engine and drop it when the player dismisses.
+    public func onEngineReady(_ callback: @escaping (PlayerEngine) -> Void) -> CinePlayerView {
+        var view = self
+        view.onEngineReadyCallback = callback
         return view
     }
 }
