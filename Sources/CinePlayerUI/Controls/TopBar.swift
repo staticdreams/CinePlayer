@@ -41,7 +41,13 @@ struct TopBar: View {
             }
             .pillGlass()
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            // Time + reception indicator (mirrors system status bar
+            // which is obscured while the player is in full-screen).
+            StatusPill()
+
+            Spacer(minLength: 8)
 
             // Expandable volume control
             VolumeControl(
