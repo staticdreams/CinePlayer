@@ -9,6 +9,11 @@ public final class PiPManager: NSObject {
     public private(set) var isPiPActive: Bool = false
     public private(set) var isPiPPossible: Bool = false
 
+    /// Called when the system wants to restore the player UI after the user tapped
+    /// the "expand" button in the PiP mini window. The host app should re-present
+    /// the full-screen player. The completion handler is invoked automatically.
+    public var onRestoreUI: (() -> Void)?
+
     private var controller: AVPictureInPictureController?
 
     public override init() {
@@ -21,6 +26,10 @@ public final class PiPManager: NSObject {
         let pip = AVPictureInPictureController(playerLayer: playerLayer)
         pip?.delegate = self
         pip?.canStartPictureInPictureAutomaticallyFromInline = canStartAutomatically
+        // Allow non-linear playback so iOS exposes scrubbing/skip affordances
+        // in the PiP window (iOS 26+ shows a draggable timeline when the item
+        // reports seekable time ranges and this flag is false).
+        pip?.requiresLinearPlayback = false
         self.controller = pip
         isPiPPossible = true
     }
@@ -65,5 +74,13 @@ extension PiPManager: AVPictureInPictureControllerDelegate {
         #if DEBUG
         print("[CinePlayer] PiP failed: \(error)")
         #endif
+    }
+
+    public func pictureInPictureController(
+        _ pictureInPictureController: AVPictureInPictureController,
+        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
+    ) {
+        onRestoreUI?()
+        completionHandler(true)
     }
 }

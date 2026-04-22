@@ -26,6 +26,13 @@ struct SwipeToDismissModifier: ViewModifier {
     let onDismiss: () -> Void
     @State private var dragOffset: CGFloat = 0
     @State private var isDragging = false
+    @State private var ignoreCurrentDrag = false
+
+    // System gesture edge reservations. Drags originating inside these zones
+    // must not move the player — iOS owns them for Control Center, Notification
+    // Center, and the home indicator.
+    private let topEdgeReserve: CGFloat = 60
+    private let bottomEdgeReserve: CGFloat = 20
 
     func body(content: Content) -> some View {
         if enabled {
@@ -33,19 +40,27 @@ struct SwipeToDismissModifier: ViewModifier {
                 .offset(y: max(0, dragOffset))
                 .opacity(dismissOpacity)
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 30)
+                    DragGesture(minimumDistance: 30, coordinateSpace: .global)
                         .onChanged { value in
-                            let horizontal = abs(value.translation.width)
-                            let vertical = value.translation.height
+                            if !isDragging && !ignoreCurrentDrag {
+                                let startY = value.startLocation.y
+                                let screenHeight = UIScreen.main.bounds.height
+                                if startY < topEdgeReserve || startY > screenHeight - bottomEdgeReserve {
+                                    ignoreCurrentDrag = true
+                                    return
+                                }
 
-                            if !isDragging {
+                                let horizontal = abs(value.translation.width)
+                                let vertical = value.translation.height
                                 guard vertical > 0, vertical > horizontal else { return }
                                 isDragging = true
                             }
 
+                            guard !ignoreCurrentDrag else { return }
                             dragOffset = max(0, value.translation.height)
                         }
                         .onEnded { value in
+                            defer { ignoreCurrentDrag = false }
                             guard isDragging else { return }
                             isDragging = false
 

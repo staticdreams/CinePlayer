@@ -14,6 +14,10 @@ public struct PlayerConfiguration: Sendable {
     /// Available playback speed options.
     public var speeds: [PlaybackSpeed] = PlaybackSpeed.standard
 
+    /// Initial playback speed applied once the player starts playing.
+    /// Use this to carry a user-selected speed across successive items (e.g. episodes).
+    public var initialSpeed: PlaybackSpeed = .normal
+
     /// Skip forward/backward interval in seconds.
     public var skipInterval: TimeInterval = 10
 
@@ -38,6 +42,7 @@ public struct PlayerConfiguration: Sendable {
         autoPlay: Bool = true,
         loop: Bool = false,
         speeds: [PlaybackSpeed] = PlaybackSpeed.standard,
+        initialSpeed: PlaybackSpeed = .normal,
         skipInterval: TimeInterval = 10,
         gravity: VideoGravity = .resizeAspect,
         localization: PlayerLocalization = .english,
@@ -48,6 +53,7 @@ public struct PlayerConfiguration: Sendable {
         self.autoPlay = autoPlay
         self.loop = loop
         self.speeds = speeds
+        self.initialSpeed = initialSpeed
         self.skipInterval = skipInterval
         self.gravity = gravity
         self.localization = localization

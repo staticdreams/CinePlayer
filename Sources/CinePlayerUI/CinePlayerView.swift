@@ -43,6 +43,10 @@ public struct CinePlayerView: View {
     private var swipeToDismiss: Bool = true
     private var onAudioTrackSelectedCallback: ((Int) -> Void)?
     private var onEngineReadyCallback: ((PlayerEngine) -> Void)?
+    private var onPiPStateChangeCallback: ((Bool) -> Void)?
+    private var onRestoreFromPiPCallback: (() -> Void)?
+    private var onCloseCallback: (() -> Void)?
+    private var onPlaybackSpeedChangeCallback: ((Float) -> Void)?
 
     public init(url: URL, configuration: PlayerConfiguration = PlayerConfiguration()) {
         self._engine = State(initialValue: PlayerEngine(url: url, configuration: configuration))
@@ -61,8 +65,16 @@ public struct CinePlayerView: View {
         playerContent
             .swipeToDismiss(enabled: swipeToDismiss) {
                 engine.deactivate()
-                dismiss()
+                performClose()
             }
+    }
+
+    private func performClose() {
+        if let onCloseCallback {
+            onCloseCallback()
+        } else {
+            dismiss()
+        }
     }
 
     @ViewBuilder
@@ -91,7 +103,7 @@ public struct CinePlayerView: View {
                 showingStats: showStats,
                 onClose: {
                     engine.deactivate()
-                    dismiss()
+                    performClose()
                 },
                 onPiPTap: {
                     pipManager.toggle()
@@ -159,6 +171,9 @@ public struct CinePlayerView: View {
         .onReceive(orientationChanged) { _ in
             isLandscape = Self.currentIsLandscape()
         }
+        .onChange(of: pipManager.isPiPActive) { _, newValue in
+            onPiPStateChangeCallback?(newValue)
+        }
         .task {
             // Wire up callbacks before activating.
             if let nowPlayingMetadata {
@@ -188,6 +203,14 @@ public struct CinePlayerView: View {
                 engine.onNextEpisode = {
                     onNextEpisodeCallback()
                 }
+            }
+
+            if let onRestoreFromPiPCallback {
+                pipManager.onRestoreUI = onRestoreFromPiPCallback
+            }
+
+            if let onPlaybackSpeedChangeCallback {
+                engine.onPlaybackSpeedChange = onPlaybackSpeedChangeCallback
             }
 
             setAudioSession()
@@ -305,6 +328,36 @@ public struct CinePlayerView: View {
     // MARK: - Audio Session
 
     private func setAudioSession() {
+        AudioSessionCoordinator.shared.activate()
+    }
+
+    private func restoreAudioSession() {
+        AudioSessionCoordinator.shared.deactivate()
+    }
+}
+
+/// Reference-counts audio-session ownership across `CinePlayerView` instances.
+///
+/// When SwiftUI replaces one `CinePlayerView` with another (e.g. advancing to the
+/// next episode via a changing `.id()`), the new view's `.task` can fire before
+/// the old view's `.onDisappear`. Without coordination, the disappearing view
+/// would tear the session down with `.ambient` + `setActive(false)` *after* the
+/// new view had already set `.playback` + `setActive(true)`, leaving the new
+/// player with no audio until the user quit and reopened the player.
+///
+/// The coordinator only applies the underlying `AVAudioSession` changes on the
+/// first activation and last deactivation; intermediate transitions are no-ops.
+@MainActor
+private final class AudioSessionCoordinator {
+    static let shared = AudioSessionCoordinator()
+
+    private var refCount = 0
+
+    private init() {}
+
+    func activate() {
+        refCount += 1
+        guard refCount == 1 else { return }
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback)
             try AVAudioSession.sharedInstance().setActive(true)
@@ -315,7 +368,9 @@ public struct CinePlayerView: View {
         }
     }
 
-    private func restoreAudioSession() {
+    func deactivate() {
+        refCount = max(0, refCount - 1)
+        guard refCount == 0 else { return }
         do {
             try AVAudioSession.sharedInstance().setCategory(.ambient)
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -530,6 +585,49 @@ extension CinePlayerView {
     public func onEngineReady(_ callback: @escaping (PlayerEngine) -> Void) -> CinePlayerView {
         var view = self
         view.onEngineReadyCallback = callback
+        return view
+    }
+
+    /// Callback fired when Picture-in-Picture activates or deactivates.
+    /// Use this to hide/restore a host-owned player chrome so the app UI can be used
+    /// while PiP is active.
+    public func onPiPStateChange(_ callback: @escaping (Bool) -> Void) -> CinePlayerView {
+        var view = self
+        view.onPiPStateChangeCallback = callback
+        return view
+    }
+
+    /// Callback fired when the system requests UI restoration from PiP (user tapped
+    /// the "expand" button in the floating mini window). The host should re-present
+    /// the full-screen player in response.
+    public func onRestoreFromPiP(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onRestoreFromPiPCallback = callback
+        return view
+    }
+
+    /// Overrides the default `Environment(\.dismiss)` close behavior. When set, the
+    /// player invokes this callback instead of dismissing a presentation — required
+    /// when hosting the player outside a sheet/cover (e.g. as a ZStack overlay).
+    public func onClose(_ callback: @escaping () -> Void) -> CinePlayerView {
+        var view = self
+        view.onCloseCallback = callback
+        return view
+    }
+
+    /// Sets the initial playback speed applied once playback actually starts.
+    /// Use this to carry a user-selected speed across successive items (e.g. episodes).
+    public func initialPlaybackSpeed(_ speed: PlaybackSpeed) -> CinePlayerView {
+        var view = self
+        view.engine.configuration.initialSpeed = speed
+        return view
+    }
+
+    /// Callback fired when the playback speed changes (user selected a new speed in
+    /// the controls or the configured initial speed was applied on first play).
+    public func onPlaybackSpeedChange(_ callback: @escaping (Float) -> Void) -> CinePlayerView {
+        var view = self
+        view.onPlaybackSpeedChangeCallback = callback
         return view
     }
 }

@@ -131,6 +131,10 @@ public final class PlayerEngine {
     /// Called when playback reaches the end.
     public var onPlaybackEnd: (() -> Void)?
 
+    /// Called whenever the playback speed is explicitly changed via `setSpeed(_:)`
+    /// (both user-initiated changes from the UI and the initial-speed apply).
+    public var onPlaybackSpeedChange: ((Float) -> Void)?
+
     // MARK: - Private
 
     private var timeObserver: TimeObserver?
@@ -139,6 +143,7 @@ public final class PlayerEngine {
     private var rateObservation: NSKeyValueObservation?
     private var currentItemObservation: NSKeyValueObservation?
     private var hasPerformedInitialSeek = false
+    private var hasAppliedInitialSpeed = false
     private var isActivated = false
 
     /// Tracks the target time of an in-flight seek so rapid skip taps accumulate.
@@ -157,6 +162,10 @@ public final class PlayerEngine {
         self.url = url
         self.configuration = configuration
         self.player = AVQueuePlayer()
+        // Keep the video layer decoding while the app is backgrounded or the
+        // device is locked. Required for continuous playback on an external
+        // display (USB-C DisplayPort, AirPlay) when the phone screen turns off.
+        self.player.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
     }
 
     // MARK: - Lifecycle
@@ -195,6 +204,10 @@ public final class PlayerEngine {
         observeCurrentItem(item)
 
         trackState.player = player
+
+        // Publish the player to the external-display bridge so a connected
+        // external UIWindowScene can mount it on its own AVPlayerLayer.
+        ExternalPlayerBridge.shared.registerPlayer(player)
     }
 
     /// Audio track metadata for HLS manifest rewriting (set before activate).
@@ -205,6 +218,8 @@ public final class PlayerEngine {
     public func deactivate() {
         guard isActivated else { return }
         isActivated = false
+
+        ExternalPlayerBridge.shared.unregisterPlayer(player)
 
         player.pause()
         state.isPlaying = false
@@ -231,6 +246,7 @@ public final class PlayerEngine {
         onDismissNext = nil
         onReplayRequested = nil
         onNextEpisode = nil
+        onPlaybackSpeedChange = nil
 
         // Release HLS manifest interceptor.
         hlsInterceptor = nil
@@ -241,6 +257,7 @@ public final class PlayerEngine {
     public func replaceURL(_ newURL: URL) {
         url = newURL
         hasPerformedInitialSeek = false
+        hasAppliedInitialSpeed = false
         state = PlayerState()
         upNextDismissed = false
 
@@ -257,6 +274,7 @@ public final class PlayerEngine {
     /// Replaces the current URL with a pre-built AVPlayerItem (for HLS interception).
     public func replaceWithItem(_ item: AVPlayerItem) {
         hasPerformedInitialSeek = false
+        hasAppliedInitialSpeed = false
         state = PlayerState()
         upNextDismissed = false
         player.replaceCurrentItem(with: item)
@@ -341,6 +359,7 @@ public final class PlayerEngine {
     public func setSpeed(_ speed: PlaybackSpeed) {
         player.rate = speed.rate
         state.rate = speed.rate
+        onPlaybackSpeedChange?(speed.rate)
     }
 
     /// Toggles between aspect fit and aspect fill.
@@ -439,6 +458,17 @@ public final class PlayerEngine {
                 let isNowPlaying = player.rate > 0
                 self.state.isPlaying = isNowPlaying
                 self.state.rate = player.rate
+
+                // Apply the configured initial speed once, as soon as AVPlayer
+                // actually starts playing. Doing it before the item is ready
+                // is unreliable (AVPlayer may reset rate to 0 or 1 on load).
+                if isNowPlaying, !self.hasAppliedInitialSpeed {
+                    self.hasAppliedInitialSpeed = true
+                    let target = self.configuration.initialSpeed
+                    if abs(target.rate - player.rate) > 0.01 {
+                        self.setSpeed(target)
+                    }
+                }
             }
         }
     }
@@ -500,9 +530,6 @@ public final class PlayerEngine {
             } else if self.upNextItem != nil && !self.upNextDismissed {
                 self.state.isPlaying = false
                 self.onPlayNext?()
-            } else if self.onReplayRequested != nil && !self.upNextDismissed {
-                self.state.isPlaying = false
-                self.onReplayRequested?()
             } else {
                 self.state.isPlaying = false
                 self.onPlaybackEnd?()
