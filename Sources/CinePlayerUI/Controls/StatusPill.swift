@@ -14,9 +14,13 @@ final class PlayerNetworkStatus {
     }
 
     var connection: Connection = .unknown
+    /// 0.0 – 1.0 signal strength, or `nil` when unavailable (stock iOS, airplane mode, offline).
+    var signalLevel: Double?
 
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "cineplayer.network.status")
+    // Timer is thread-safe to invalidate; flagged nonisolated so deinit can reach it.
+    private nonisolated(unsafe) var pollTimer: Timer?
 
     init() {
         monitor.pathUpdateHandler = { [weak self] path in
@@ -28,21 +32,55 @@ final class PlayerNetworkStatus {
                 return .unknown
             }()
             Task { @MainActor [weak self] in
-                self?.connection = resolved
+                guard let self else { return }
+                self.connection = resolved
+                self.refreshSignal()
             }
         }
         monitor.start(queue: queue)
+
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.refreshSignal() }
+        }
     }
 
     deinit {
+        pollTimer?.invalidate()
         monitor.cancel()
+    }
+
+    // MARK: - Signal polling
+
+    private func refreshSignal() {
+        switch connection {
+        case .wifi, .wired:
+            if let rssi = PrivateSignalClient.shared.wifiRSSI() {
+                signalLevel = Self.normalize(rssi: rssi)
+            } else {
+                signalLevel = nil
+            }
+        case .cellular:
+            if let bars = PrivateSignalClient.shared.cellularBars() {
+                signalLevel = Double(bars) / 5.0
+            } else {
+                signalLevel = nil
+            }
+        case .offline, .unknown:
+            signalLevel = nil
+        }
+    }
+
+    /// Maps RSSI (dBm) into a 0…1 scale. −30 dBm and stronger → 1.0; −90 dBm and weaker → 0.0.
+    private static func normalize(rssi: Int) -> Double {
+        let clamped = max(-90, min(-30, rssi))
+        return Double(clamped + 90) / 60.0
     }
 }
 
 // MARK: - Status Pill
 
-/// A glass pill showing the current time and network reception,
-/// giving users the status-bar context normally hidden by the player.
+/// Glass pill showing the current time and network reception,
+/// surfacing status-bar context that the full-screen player obscures.
 struct StatusPill: View {
     @State private var network = PlayerNetworkStatus()
 
@@ -62,7 +100,7 @@ struct StatusPill: View {
                 .fill(Color.white.opacity(0.18))
                 .frame(width: 1, height: 14)
 
-            Image(systemName: iconName)
+            signalIcon
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(iconColor)
                 .symbolRenderingMode(.hierarchical)
@@ -73,14 +111,21 @@ struct StatusPill: View {
         .frame(height: pillHeight)
         .pillGlass()
         .animation(.easeInOut(duration: 0.2), value: network.connection)
+        .animation(.easeInOut(duration: 0.2), value: network.signalLevel)
     }
 
-    private var iconName: String {
+    private var signalIcon: Image {
+        // Variable-value symbols fill bars according to the 0…1 level.
+        // Falls back to a solid icon when no signal data is available.
         switch network.connection {
-        case .wifi, .wired: "wifi"
-        case .cellular: "antenna.radiowaves.left.and.right"
-        case .offline: "wifi.slash"
-        case .unknown: "wifi.exclamationmark"
+        case .wifi, .wired:
+            return Image(systemName: "wifi", variableValue: network.signalLevel ?? 1.0)
+        case .cellular:
+            return Image(systemName: "cellularbars", variableValue: network.signalLevel ?? 1.0)
+        case .offline:
+            return Image(systemName: "wifi.slash")
+        case .unknown:
+            return Image(systemName: "wifi.exclamationmark")
         }
     }
 
@@ -93,12 +138,16 @@ struct StatusPill: View {
     }
 
     private var accessibilityLabel: String {
-        switch network.connection {
-        case .wifi: "Wi-Fi connected"
-        case .wired: "Ethernet connected"
-        case .cellular: "Cellular connected"
-        case .offline: "No network connection"
-        case .unknown: "Network status unknown"
+        let base: String = switch network.connection {
+        case .wifi: "Wi-Fi"
+        case .wired: "Ethernet"
+        case .cellular: "Cellular"
+        case .offline: "Offline"
+        case .unknown: "Network unknown"
         }
+        if let level = network.signalLevel {
+            return "\(base), signal \(Int(level * 100)) percent"
+        }
+        return base
     }
 }
