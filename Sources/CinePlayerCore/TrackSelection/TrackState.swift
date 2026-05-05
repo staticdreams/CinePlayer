@@ -22,6 +22,14 @@ public final class TrackState {
     /// Subtitle options discovered from the AVMediaSelectionGroup.
     public private(set) var discoveredSubtitleOptions: [AVMediaSelectionOption] = []
 
+    /// Audio tracks discovered directly from the player item.
+    ///
+    /// Local MP4 files commonly expose alternate audio as embedded asset tracks
+    /// instead of AVMediaSelectionOption values. AVPlayer can still switch those
+    /// tracks by enabling one AVPlayerItemTrack and disabling the other audio
+    /// item tracks.
+    public private(set) var discoveredEmbeddedAudioTracks: [AVPlayerItemTrack] = []
+
     // MARK: - Matched tracks (protocol track + AV option)
 
     /// Matched audio tracks: each protocol track paired with its AV option (if found).
@@ -56,7 +64,7 @@ public final class TrackState {
             let asset = playerItem.asset
             let mediaCharacteristics = try await asset.load(.availableMediaCharacteristicsWithMediaSelectionOptions)
 
-            // Audio
+            // Audio exposed as AV media selection options (HLS and some MOV/MP4 files).
             if mediaCharacteristics.contains(.audible),
                let group = try await asset.loadMediaSelectionGroup(for: .audible) {
                 let options = Array(group.options)
@@ -68,6 +76,24 @@ public final class TrackState {
                     if selectedAudioIndex == nil {
                         selectedAudioIndex = audioTracks.firstIndex(where: { $0.isDefault }) ?? 0
                     }
+                }
+            }
+
+            // Audio exposed as embedded tracks (common for downloaded MP4 files).
+            let embeddedAudioTracks = playerItem.tracks.filter { itemTrack in
+                itemTrack.assetTrack?.mediaType == .audio
+            }
+            discoveredEmbeddedAudioTracks = embeddedAudioTracks
+
+            if discoveredAudioOptions.isEmpty, !embeddedAudioTracks.isEmpty {
+                if audioTracks.isEmpty {
+                    audioTracks = embeddedAudioTracks.enumerated().map { index, itemTrack in
+                        DiscoveredAudioTrack(index: index, itemTrack: itemTrack)
+                    }
+                }
+
+                if selectedAudioIndex == nil {
+                    selectedAudioIndex = audioTracks.firstIndex(where: { $0.isDefault }) ?? 0
                 }
             }
 
@@ -128,8 +154,6 @@ public final class TrackState {
         guard let player, let item = player.currentItem else { return }
 
         Task {
-            guard let group = try? await item.asset.loadMediaSelectionGroup(for: .audible) else { return }
-
             let option: AVMediaSelectionOption?
             if let index = selectedAudioIndex {
                 if !matchedAudioTracks.isEmpty, index < matchedAudioTracks.count {
@@ -143,9 +167,23 @@ public final class TrackState {
                 option = nil
             }
 
-            if let option {
+            if let option,
+               let group = try? await item.asset.loadMediaSelectionGroup(for: .audible) {
                 item.select(option, in: group)
+            } else if let index = selectedAudioIndex {
+                applyEmbeddedAudioSelection(index: index, item: item)
             }
+        }
+    }
+
+    private func applyEmbeddedAudioSelection(index: Int, item: AVPlayerItem) {
+        let audioItemTracks = item.tracks.filter { itemTrack in
+            itemTrack.assetTrack?.mediaType == .audio
+        }
+        guard audioItemTracks.indices.contains(index) else { return }
+
+        for (trackIndex, itemTrack) in audioItemTracks.enumerated() {
+            itemTrack.isEnabled = trackIndex == index
         }
     }
 
@@ -180,4 +218,31 @@ private struct DiscoveredSubtitleTrack: PlayerSubtitleTrack {
     let language: String?
     let displayName: String
     let isForced: Bool
+}
+
+// MARK: - Auto-generated audio track from AVPlayerItemTrack
+
+/// Lightweight wrapper around an embedded MP4 audio track,
+/// used when the host app doesn't supply explicit audio metadata.
+private struct DiscoveredAudioTrack: PlayerAudioTrack {
+    let id: String
+    let language: String?
+    let displayName: String
+    let isDefault: Bool
+
+    init(index: Int, itemTrack: AVPlayerItemTrack) {
+        self.id = "\(index)"
+        self.isDefault = index == 0
+
+        let assetTrack = itemTrack.assetTrack
+        let language = assetTrack?.extendedLanguageTag ?? assetTrack?.languageCode
+        self.language = language
+
+        if let language, !language.isEmpty, language != "und" {
+            self.displayName = Locale.current.localizedString(forLanguageCode: language)
+                ?? language.uppercased()
+        } else {
+            self.displayName = "Audio \(index + 1)"
+        }
+    }
 }
